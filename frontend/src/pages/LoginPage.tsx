@@ -5,6 +5,8 @@ import { useAuth } from "../context/auth.js";
 import { ApiError } from "../api/client.js";
 import { FormAlert } from "../components/FormAlert.js";
 import { useFocusAlert } from "../components/useFocusAlert.js";
+import { Field } from "../components/Field.js";
+import { Button } from "../components/Button.js";
 
 export function LoginPage() {
   const { signin } = useAuth();
@@ -39,10 +41,13 @@ export function LoginPage() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <Link to="/login" className="auth-brand">
+          Mini Issue Tracker
+        </Link>
         <h1 className="auth-title">Sign in</h1>
+        <p className="auth-subtitle">Sign in to access your workspaces.</p>
         <FormAlert id="auth-error" alert={alert} alertRef={alertRef} />
-        <label className="field">
-          <span className="field-label">Email</span>
+        <Field label="Email">
           <input
             type="email"
             value={email}
@@ -53,9 +58,8 @@ export function LoginPage() {
             aria-invalid={emailInvalid || undefined}
             aria-describedby={emailInvalid ? "auth-error" : undefined}
           />
-        </label>
-        <label className="field">
-          <span className="field-label">Password</span>
+        </Field>
+        <Field label="Password">
           <input
             type="password"
             value={password}
@@ -65,10 +69,10 @@ export function LoginPage() {
             aria-invalid={passwordInvalid || undefined}
             aria-describedby={passwordInvalid ? "auth-error" : undefined}
           />
-        </label>
-        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+        </Field>
+        <Button type="submit" variant="primary" block disabled={submitting}>
           {submitting ? "Signing in..." : "Sign in"}
-        </button>
+        </Button>
         <p className="auth-alt">
           No account? <Link to="/signup">Sign up</Link>
         </p>

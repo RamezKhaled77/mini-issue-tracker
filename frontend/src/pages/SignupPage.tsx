@@ -5,6 +5,8 @@ import { useAuth } from "../context/auth.js";
 import { ApiError } from "../api/client.js";
 import { FormAlert } from "../components/FormAlert.js";
 import { useFocusAlert } from "../components/useFocusAlert.js";
+import { Field } from "../components/Field.js";
+import { Button } from "../components/Button.js";
 
 export function SignupPage() {
   const { signup } = useAuth();
@@ -46,9 +48,9 @@ export function SignupPage() {
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1 className="auth-title">Create account</h1>
+        <p className="auth-subtitle">Create an account to start tracking issues.</p>
         <FormAlert id="auth-error" alert={alert} alertRef={alertRef} />
-        <label className="field">
-          <span className="field-label">Email</span>
+        <Field label="Email">
           <input
             type="email"
             value={email}
@@ -59,9 +61,8 @@ export function SignupPage() {
             aria-invalid={emailInvalid || undefined}
             aria-describedby={emailInvalid ? "auth-error" : undefined}
           />
-        </label>
-        <label className="field">
-          <span className="field-label">Password</span>
+        </Field>
+        <Field label="Password">
           <input
             type="password"
             value={password}
@@ -71,9 +72,8 @@ export function SignupPage() {
             aria-invalid={passwordInvalid || undefined}
             aria-describedby={passwordInvalid ? "auth-error" : undefined}
           />
-        </label>
-        <label className="field">
-          <span className="field-label">Confirm password</span>
+        </Field>
+        <Field label="Confirm password">
           <input
             type="password"
             value={confirm}
@@ -83,10 +83,10 @@ export function SignupPage() {
             aria-invalid={confirmInvalid || undefined}
             aria-describedby={confirmInvalid ? "auth-error" : undefined}
           />
-        </label>
-        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+        </Field>
+        <Button type="submit" variant="primary" block disabled={submitting}>
           {submitting ? "Creating account..." : "Sign up"}
-        </button>
+        </Button>
         <p className="auth-alt">
           Already have an account? <Link to="/login">Sign in</Link>
         </p>

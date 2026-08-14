@@ -41,8 +41,9 @@ describe("ProjectDialog", () => {
     vi.mocked(api.post).mockResolvedValueOnce({ project: { ...projects[0], id: "p3", name: "New" } });
     const onProjectsChanged = vi.fn().mockResolvedValue(undefined);
     renderDialog({ onProjectsChanged });
-    fireEvent.change(screen.getByPlaceholderText("New project name"), { target: { value: "New" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    fireEvent.click(screen.getByRole("button", { name: "New project" }));
+    fireEvent.change(await screen.findByLabelText("Project name"), { target: { value: "New" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith("/workspaces/ws-1/projects", { name: "New" });
@@ -56,7 +57,8 @@ describe("ProjectDialog", () => {
     renderDialog({ onProjectsChanged });
     const row = screen.getByText("Frontend").closest("li") as HTMLElement;
     fireEvent.click(within(row).getByRole("button", { name: "Rename" }));
-    const input = screen.getByDisplayValue("Frontend");
+    const input = await screen.findByLabelText("Project name");
+    expect(input).toHaveValue("Frontend");
     fireEvent.change(input, { target: { value: "Frontend App" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
@@ -66,14 +68,14 @@ describe("ProjectDialog", () => {
     });
   });
 
-  it("deletes a project after confirmation", async () => {
+  it("deletes a project after confirming in the dialog", async () => {
     vi.mocked(api.delete).mockResolvedValueOnce(undefined);
     const onSelectProject = vi.fn();
     const onProjectsChanged = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderDialog({ selectedProject: "p1", onSelectProject, onProjectsChanged });
     const row = screen.getByText("Frontend").closest("li") as HTMLElement;
     fireEvent.click(within(row).getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith("/projects/p1");
@@ -82,17 +84,17 @@ describe("ProjectDialog", () => {
     });
   });
 
-  it("does not delete when confirmation is cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("does not delete when the dialog is cancelled", async () => {
     renderDialog();
     const row = screen.getByText("Frontend").closest("li") as HTMLElement;
     fireEvent.click(within(row).getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(api.delete).not.toHaveBeenCalled();
   });
 
   it("shows the empty state when there are no projects", () => {
     renderDialog({ projects: [] });
-    expect(screen.getByText("No projects yet.")).toBeInTheDocument();
+    expect(screen.getByText("No projects yet")).toBeInTheDocument();
   });
 });

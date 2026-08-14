@@ -7,10 +7,11 @@ import { DashboardPage } from "./pages/DashboardPage.js";
 import { WorkspacePage } from "./pages/WorkspacePage.js";
 import { IssuePage } from "./pages/IssuePage.js";
 import { Layout } from "./components/Layout.js";
+import { SkeletonRows } from "./components/Skeleton.js";
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="page-center">Loading...</div>;
+  if (loading) return <SkeletonRows rows={4} className="page-skeleton" />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

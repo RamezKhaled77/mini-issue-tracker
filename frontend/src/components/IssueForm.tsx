@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { api } from "../api/client.js";
+import { api, ApiError } from "../api/client.js";
 import type { Issue } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
+import { Alert } from "./Alert.js";
+import { Button } from "./Button.js";
+import { Field } from "./Field.js";
 
 export interface IssueFormData {
   title: string;
@@ -43,6 +46,7 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
   const [labels, setLabels] = useState<Label[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -66,6 +70,7 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setFieldErrors({});
     const body: Record<string, unknown> = {
       title,
       description: description.trim() === "" ? null : description,
@@ -83,27 +88,31 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
       }
       await onSubmit();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save issue");
+      if (err instanceof ApiError && err.fields && Object.keys(err.fields).length > 0) {
+        setFieldErrors(err.fields);
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to save issue");
+      }
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form className="card issue-form" onSubmit={handleSubmit}>
-      <h3 className="section-title">{initial ? "Edit issue" : "New issue"}</h3>
-      {error && <p className="alert alert-error">{error}</p>}
-      <label className="field">
-        <span className="field-label">Title</span>
+    <form className="issue-form" onSubmit={handleSubmit}>
+      {error && (
+        <Alert role="alert" className="form-alert">
+          {error}
+        </Alert>
+      )}
+      <Field label="Title" error={fieldErrors.title}>
         <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-      </label>
-      <label className="field">
-        <span className="field-label">Description</span>
+      </Field>
+      <Field label="Description" error={fieldErrors.description}>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-      </label>
+      </Field>
       <div className="field-row">
-        <label className="field">
-          <span className="field-label">Status</span>
+        <Field label="Status" error={fieldErrors.status}>
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
             {ISSUE_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -111,9 +120,8 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
               </option>
             ))}
           </select>
-        </label>
-        <label className="field">
-          <span className="field-label">Priority</span>
+        </Field>
+        <Field label="Priority" error={fieldErrors.priority}>
           <select value={priority} onChange={(e) => setPriority(e.target.value)}>
             {ISSUE_PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -121,15 +129,13 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
               </option>
             ))}
           </select>
-        </label>
-        <label className="field">
-          <span className="field-label">Due date</span>
+        </Field>
+        <Field label="Due date" error={fieldErrors.dueDate}>
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        </label>
+        </Field>
       </div>
       {members.length > 0 && (
-        <label className="field">
-          <span className="field-label">Assignee</span>
+        <Field label="Assignee" error={fieldErrors.assigneeId}>
           <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
             <option value="">Unassigned</option>
             {members.map((m) => (
@@ -138,7 +144,7 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
               </option>
             ))}
           </select>
-        </label>
+        </Field>
       )}
       {labels.length > 0 && (
         <div className="field">
@@ -158,12 +164,12 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
         </div>
       )}
       <div className="form-actions">
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
-        </button>
-        <button type="submit" className="btn btn-primary" disabled={submitting}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Saving..." : initial ? "Save changes" : "Create issue"}
-        </button>
+        </Button>
       </div>
     </form>
   );
