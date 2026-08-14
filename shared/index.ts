@@ -1,0 +1,131 @@
+export const ISSUE_STATUSES = ["Open", "In Progress", "Closed"] as const;
+export const ISSUE_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
+
+export type IssueStatus = (typeof ISSUE_STATUSES)[number];
+export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
+
+export interface User {
+  id: string;
+  email: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  ownerId: string;
+  isOwner: boolean;
+}
+
+export interface Project {
+  id: string;
+  workspaceId: string;
+  name: string;
+}
+
+export interface Issue {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  status: IssueStatus;
+  priority: IssuePriority;
+  assigneeId: string | null;
+  labelIds: string[];
+  dueDate: string | null;
+}
+
+export interface Comment {
+  id: string;
+  issueId: string;
+  authorId: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface Label {
+  id: string;
+  workspaceId: string;
+  name: string;
+}
+
+export interface Invitation {
+  token: string;
+  expiresAt: string;
+}
+
+export interface DashboardStats {
+  byStatus: Record<IssueStatus, number>;
+  byPriority: Record<IssuePriority, number>;
+  total: number;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ApiErrorShape {
+  error: {
+    code: "VALIDATION" | "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT";
+    message: string;
+    fields?: Record<string, string>;
+  };
+}
+
+export interface SignupRequest {
+  email: string;
+  password: string;
+}
+
+export interface SigninRequest {
+  email: string;
+  password: string;
+}
+
+export interface CreateWorkspaceRequest {
+  name: string;
+}
+
+export interface JoinWorkspaceRequest {
+  token: string;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+}
+
+export interface UpdateProjectRequest {
+  name: string;
+}
+
+export interface CreateIssueRequest {
+  title: string;
+  description?: string | null;
+  status: IssueStatus;
+  priority: IssuePriority;
+  assigneeId?: string | null;
+  labelIds?: string[];
+  dueDate?: string | null;
+}
+
+export type UpdateIssueRequest = Partial<CreateIssueRequest>;
+
+export interface CreateCommentRequest {
+  body: string;
+}
+
+export interface CreateLabelRequest {
+  name: string;
+}
+
+export interface IssueQueryParams {
+  search?: string;
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  assigneeId?: string;
+  labelId?: string;
+  page?: number;
+  pageSize?: number;
+}

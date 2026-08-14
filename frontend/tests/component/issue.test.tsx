@@ -1,0 +1,61 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { IssueForm } from "../../src/components/IssueForm.js";
+
+vi.mock("../../src/api/client.js", () => ({
+  api: {
+    get: vi.fn().mockResolvedValue({ items: [{ id: "l1", name: "bug" }, { id: "l2", name: "ui" }] }),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
+
+import { api } from "../../src/api/client.js";
+
+function renderForm() {
+  return render(
+    <IssueForm
+      workspaceId="ws-1"
+      projectId="proj-1"
+      onSubmit={vi.fn()}
+      onCancel={vi.fn()}
+    />
+  );
+}
+
+describe("IssueForm", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders the required title field", async () => {
+    renderForm();
+    expect(await screen.findByLabelText("Title")).toBeRequired();
+    expect(screen.getByLabelText("Status")).toBeInTheDocument();
+    expect(screen.getByLabelText("Priority")).toBeInTheDocument();
+  });
+
+  it("loads and shows workspace labels", async () => {
+    renderForm();
+    expect(await screen.findByText("bug")).toBeInTheDocument();
+    expect(screen.getByText("ui")).toBeInTheDocument();
+  });
+
+  it("posts a new issue on submit", async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({});
+    renderForm();
+    fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "New bug" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create issue" }));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith("/projects/proj-1/issues", expect.objectContaining({ title: "New bug" }));
+    });
+  });
+
+  it("requires a title", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: "Create issue" }));
+    expect(api.post).not.toHaveBeenCalled();
+  });
+});
