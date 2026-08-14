@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth.js";
+import { Button } from "./Button.js";
 
 export function Layout() {
   const { user, signout } = useAuth();
@@ -12,18 +13,21 @@ export function Layout() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <header className="app-header">
         <Link to="/" className="app-title">
           Mini Issue Tracker
         </Link>
-        <nav className="app-nav">
+        <nav className="app-nav" aria-label="Account">
           <span className="app-user">{user?.email}</span>
-          <button type="button" className="btn btn-ghost" onClick={handleSignout}>
+          <Button type="button" variant="ghost" onClick={handleSignout}>
             Sign out
-          </button>
+          </Button>
         </nav>
       </header>
-      <main className="app-main">
+      <main className="app-main" id="main-content">
         <Outlet />
       </main>
     </div>

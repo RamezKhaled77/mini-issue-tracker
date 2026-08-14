@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api/client.js";
+import { Button } from "./Button.js";
+import { Field } from "./Field.js";
 
 interface InvitationsProps {
   workspaceId?: string;
@@ -39,26 +41,29 @@ export function Invitations({ workspaceId, isOwner, onJoined }: InvitationsProps
 
   return (
     <>
-      {error && <p className="alert alert-error">{error}</p>}
+      {error && (
+        <p className="alert alert--error" role="alert">
+          {error}
+        </p>
+      )}
       <div className="workspace-tools">
         <form className="inline-form" onSubmit={handleJoin}>
-          <label className="field field-grow">
-            <span className="sr-only">Invitation token</span>
+          <Field label="Invitation token" className="field-grow" srOnlyLabel>
             <input
               value={joinToken}
               onChange={(e) => setJoinToken(e.target.value)}
               placeholder="Paste an invitation token to join"
             />
-          </label>
-          <button type="submit" className="btn">
+          </Field>
+          <Button type="submit" variant="secondary">
             Join workspace
-          </button>
+          </Button>
         </form>
         {workspaceId && isOwner && (
           <div className="invite-row">
-            <button type="button" className="btn" onClick={handleGenerateInvite}>
+            <Button type="button" variant="secondary" onClick={handleGenerateInvite}>
               Generate invitation
-            </button>
+            </Button>
             {inviteToken && (
               <input className="invite-token" readOnly value={inviteToken} aria-label="Invitation token" />
             )}

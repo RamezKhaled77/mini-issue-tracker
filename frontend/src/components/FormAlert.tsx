@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { Alert } from "./Alert.js";
 
 export interface FormAlertData {
   message: string;
@@ -14,8 +15,8 @@ interface FormAlertProps {
 export function FormAlert({ alert, id, alertRef }: FormAlertProps) {
   if (!alert) return null;
   return (
-    <p id={id} ref={alertRef} role="alert" tabIndex={-1} className="alert alert-error">
+    <Alert id={id} ref={alertRef} role="alert" tabIndex={-1}>
       {alert.message}
-    </p>
+    </Alert>
   );
 }

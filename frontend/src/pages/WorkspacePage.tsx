@@ -6,6 +6,14 @@ import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { IssueForm } from "../components/IssueForm.js";
 import { Invitations } from "../components/Invitations.js";
 import { ProjectDialog } from "../components/ProjectDialog.js";
+import { Alert } from "../components/Alert.js";
+import { Badge } from "../components/Badge.js";
+import type { BadgeTone } from "../components/Badge.js";
+import { Button } from "../components/Button.js";
+import { Dialog } from "../components/Dialog.js";
+import { EmptyState } from "../components/EmptyState.js";
+import { Field } from "../components/Field.js";
+import { SkeletonRows } from "../components/Skeleton.js";
 
 interface WorkspaceDetail {
   id: string;
@@ -98,29 +106,41 @@ export function WorkspacePage() {
         &larr; All workspaces
       </Link>
       <h1 className="page-title">{workspace?.name ?? "Workspace"}</h1>
-      {error && <p className="alert alert-error">{error}</p>}
-
-      {stats && (
-        <section className="dashboard" aria-label="Issue statistics">
-          <h2 className="section-title">Dashboard</h2>
-          <div className="stat-grid">
-            {ISSUE_STATUSES.map((s) => (
-              <div key={s} className="stat">
-                <span className={`stat-value`}>{stats.byStatus[s] ?? 0}</span>
-                <span className="stat-label">{s}</span>
-              </div>
-            ))}
-          </div>
-          <div className="stat-grid stat-grid-priority">
-            {ISSUE_PRIORITIES.map((p) => (
-              <div key={p} className="stat">
-                <span className={`stat-value`}>{stats.byPriority[p] ?? 0}</span>
-                <span className="stat-label">{p}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+      {error && (
+        <Alert role="alert" className="page-alert">
+          {error}
+        </Alert>
       )}
+
+      <section className="dashboard" aria-label="Issue statistics">
+        <h2 className="section-title">Dashboard</h2>
+        {stats ? (
+          <>
+            <div className="stat-grid">
+              {ISSUE_STATUSES.map((s) => (
+                <div key={s} className="stat">
+                  <span className="stat-value">{stats.byStatus[s] ?? 0}</span>
+                  <span className="stat-label">
+                    <Badge tone={`status-${s.toLowerCase().replace(" ", "-")}` as BadgeTone}>{s}</Badge>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="stat-grid stat-grid-priority">
+              {ISSUE_PRIORITIES.map((p) => (
+                <div key={p} className="stat">
+                  <span className="stat-value">{stats.byPriority[p] ?? 0}</span>
+                  <span className="stat-label">
+                    <Badge tone={`priority-${p.toLowerCase()}` as BadgeTone}>{p}</Badge>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <SkeletonRows rows={2} className="stat-skeleton" />
+        )}
+      </section>
 
       <Invitations workspaceId={workspaceId!} isOwner={Boolean(workspace?.isOwner)} />
 
@@ -141,37 +161,42 @@ export function WorkspacePage() {
           <div className="section-header">
             <h2 className="section-title">Issues</h2>
             {selectedProject && !showForm && (
-              <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Button type="button" variant="primary" onClick={() => setShowForm(true)}>
                 New issue
-              </button>
+              </Button>
             )}
           </div>
 
           {showForm && selectedProject && (
-            <IssueForm
-              workspaceId={workspaceId!}
-              projectId={selectedProject}
-              onCancel={() => setShowForm(false)}
-              onSubmit={async () => {
-                setShowForm(false);
-                await loadIssues();
-                await loadStats();
-              }}
-            />
+            <Dialog
+              open
+              onClose={() => setShowForm(false)}
+              title="New issue"
+              description="Create a new issue in this project."
+            >
+              <IssueForm
+                workspaceId={workspaceId!}
+                projectId={selectedProject}
+                onCancel={() => setShowForm(false)}
+                onSubmit={async () => {
+                  setShowForm(false);
+                  await loadIssues();
+                  await loadStats();
+                }}
+              />
+            </Dialog>
           )}
 
           {selectedProject && (
             <div className="filter-bar" role="search">
-              <label className="field">
-                <span className="sr-only">Search issues</span>
+              <Field label="Search issues" srOnlyLabel className="field-grow">
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search title or description"
                 />
-              </label>
-              <label className="field">
-                <span className="sr-only">Filter by status</span>
+              </Field>
+              <Field label="Filter by status" srOnlyLabel>
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                   <option value="">All statuses</option>
                   {ISSUE_STATUSES.map((s) => (
@@ -180,9 +205,8 @@ export function WorkspacePage() {
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="field">
-                <span className="sr-only">Filter by priority</span>
+              </Field>
+              <Field label="Filter by priority" srOnlyLabel>
                 <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
                   <option value="">All priorities</option>
                   {ISSUE_PRIORITIES.map((p) => (
@@ -191,17 +215,36 @@ export function WorkspacePage() {
                     </option>
                   ))}
                 </select>
-              </label>
-              {(filtering || issues.length > 0) && (
-                <span className="filter-count">{issues.length} result{issues.length === 1 ? "" : "s"}</span>
-              )}
+              </Field>
+              <div className="filter-meta">
+                {(filtering || issues.length > 0) && (
+                  <span className="filter-count">
+                    {issues.length} result{issues.length === 1 ? "" : "s"}
+                  </span>
+                )}
+                {filtering && (
+                  <span className="filter-active">
+                    Filtering
+                    <Button type="button" variant="ghost" className="filter-clear" onClick={() => {
+                      setSearch("");
+                      setStatusFilter("");
+                      setPriorityFilter("");
+                    }}>
+                      Clear filters
+                    </Button>
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
           {!selectedProject ? (
-            <p className="empty-state">Select a project to see its issues.</p>
+            <EmptyState title="Select a project" description="Select a project to see its issues." />
           ) : issues.length === 0 ? (
-            <p className="empty-state">{filtering ? "No issues match your filters." : "No issues in this project."}</p>
+            <EmptyState
+              title={filtering ? "No matching issues" : "No issues yet"}
+              description={filtering ? "No issues match your filters." : "Create your first issue in this project."}
+            />
           ) : (
             <ul className="card-list">
               {issues.map((issue) => (
@@ -209,8 +252,12 @@ export function WorkspacePage() {
                   <Link to={`/workspaces/${workspaceId}/issues/${issue.id}`} className="card">
                     <span className="card-title">{issue.title}</span>
                     <span className="card-meta">
-                      <span className={`badge badge-status-${issue.status.toLowerCase()}`}>{issue.status}</span>
-                      <span className={`badge badge-priority-${issue.priority.toLowerCase()}`}>{issue.priority}</span>
+                      <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
+                        {issue.status}
+                      </Badge>
+                      <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
+                        {issue.priority}
+                      </Badge>
                     </span>
                   </Link>
                 </li>

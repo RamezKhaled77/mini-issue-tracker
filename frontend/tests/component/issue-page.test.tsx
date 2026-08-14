@@ -50,12 +50,12 @@ describe("IssuePage delete flow", () => {
     expect(button).toBeInTheDocument();
   });
 
-  it("deletes the issue after confirmation and navigates back", async () => {
+  it("deletes the issue after confirming in the dialog and navigates back", async () => {
     vi.mocked(api.delete).mockResolvedValueOnce(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
     await screen.findByRole("button", { name: "Delete issue" });
     fireEvent.click(screen.getByRole("button", { name: "Delete issue" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete issue confirmation" }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith("/issues/iss-1");
@@ -63,21 +63,21 @@ describe("IssuePage delete flow", () => {
     });
   });
 
-  it("does not delete when confirmation is cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("does not delete when the dialog is cancelled", async () => {
     renderPage();
     await screen.findByRole("button", { name: "Delete issue" });
     fireEvent.click(screen.getByRole("button", { name: "Delete issue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(api.delete).not.toHaveBeenCalled();
   });
 
   it("surfaces delete errors without navigating", async () => {
     vi.mocked(api.delete).mockRejectedValueOnce(new Error("Not a member of this workspace"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
     await screen.findByRole("button", { name: "Delete issue" });
     fireEvent.click(screen.getByRole("button", { name: "Delete issue" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete issue confirmation" }));
 
     await waitFor(() => {
       expect(screen.getByText("Not a member of this workspace")).toBeInTheDocument();
