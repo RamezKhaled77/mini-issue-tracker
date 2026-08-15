@@ -3,6 +3,7 @@ import argon2 from "argon2";
 import type { Db } from "../db/client.js";
 import { sessions, users } from "../db/schema.js";
 import { createSessionRecord, createUserRecord } from "../domain/user.js";
+import { resolveDisplayName } from "../lib/identity.js";
 import { newSessionId } from "../api/middleware/session.js";
 import { ApiError } from "../api/middleware/error-handler.js";
 
@@ -12,19 +13,19 @@ export interface AuthServiceDeps {
 }
 
 export interface AuthResult {
-  user: { id: string; email: string };
+  user: { id: string; email: string; name: string };
   sessionId: string;
   expiresAt: Date;
 }
 
 export function createAuthService(deps: AuthServiceDeps) {
-  async function signup(email: string, password: string): Promise<AuthResult> {
+  async function signup(email: string, name: string, password: string): Promise<AuthResult> {
     const existing = deps.db.select({ id: users.id }).from(users).where(eq(users.email, email)).get();
     if (existing) {
       throw new ApiError(409, "CONFLICT", "An account with this email already exists");
     }
     const passwordHash = await argon2.hash(password);
-    const user = createUserRecord(email, passwordHash);
+    const user = createUserRecord(email, passwordHash, name);
     deps.db.insert(users).values(user).run();
     return await createSession(user.id);
   }
@@ -49,9 +50,13 @@ export function createAuthService(deps: AuthServiceDeps) {
     const sessionId = newSessionId();
     const session = createSessionRecord(userId, sessionId, deps.sessionTtlMs);
     deps.db.insert(sessions).values(session).run();
-    const user = deps.db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, userId)).get();
+    const user = deps.db.select({ id: users.id, email: users.email, name: users.name }).from(users).where(eq(users.id, userId)).get();
     if (!user) throw new ApiError(404, "NOT_FOUND", "User not found");
-    return { user, sessionId, expiresAt: session.expiresAt };
+    return {
+      user: { id: user.id, email: user.email, name: resolveDisplayName(user.name, user.email) },
+      sessionId,
+      expiresAt: session.expiresAt,
+    };
   }
 
   function signout(sessionId: string): void {

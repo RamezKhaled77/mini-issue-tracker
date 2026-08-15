@@ -49,6 +49,25 @@ describe("accessibility", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("full name field is labelled and axe-clean", async () => {
+    const { container } = renderAuthed(<SignupPage />);
+    const nameField = screen.getByLabelText("Full name");
+    expect(nameField).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("standalone header avatar announces the user's name via role=img", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      user: { id: "u1", email: "alice@example.com", name: "Alice Smith" },
+      items: [],
+    });
+    const { container } = renderAuthed(<Layout />);
+    const avatar = await screen.findByRole("img", { name: "Alice Smith" });
+    expect(avatar).toHaveAttribute("aria-label", "Alice Smith");
+    expect(avatar).not.toHaveAttribute("aria-hidden");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it("issue form has no axe violations", async () => {
     const { container } = render(
       <IssueForm workspaceId="ws" projectId="proj" onSubmit={vi.fn()} onCancel={vi.fn()} />
@@ -219,7 +238,8 @@ describe("accessibility", () => {
               description: null,
               status: "Open",
               priority: "Medium",
-              assigneeId: null,
+              assigneeId: "u2",
+              assignee: { id: "u2", name: "Sam Rivera" },
               dueDate: null,
               labelIds: [],
             },
@@ -236,6 +256,9 @@ describe("accessibility", () => {
       </MemoryRouter>
     );
     await screen.findByText("Logout bug");
+    const cardAvatar = container.querySelector(".card-assignee .avatar");
+    expect(cardAvatar).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".card-assignee")).toHaveTextContent("Sam Rivera");
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -250,7 +273,8 @@ describe("accessibility", () => {
             description: "Login button does nothing",
             status: "Open",
             priority: "High",
-            assigneeId: null,
+            assigneeId: "u2",
+            assignee: { id: "u2", name: "Sam Rivera" },
             dueDate: null,
             labelIds: [],
           },
@@ -258,7 +282,7 @@ describe("accessibility", () => {
       }
       if (path === "/issues/iss-1/comments") {
         return Promise.resolve({
-          items: [{ id: "c1", issueId: "iss-1", authorId: "u1", body: "On it", createdAt: "2024-01-01T00:00:00Z" }],
+          items: [{ id: "c1", issueId: "iss-1", authorId: "u1", author: { id: "u1", name: "Priya Patel" }, body: "On it", createdAt: "2024-01-01T00:00:00Z" }],
         });
       }
       return Promise.resolve({ items: [] });
@@ -271,6 +295,12 @@ describe("accessibility", () => {
       </MemoryRouter>
     );
     await screen.findByText("Fix login bug");
+    const assigneeAvatar = container.querySelector(".assignee-name .avatar");
+    expect(assigneeAvatar).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".assignee-name")).toHaveTextContent("Sam Rivera");
+    const authorAvatar = container.querySelector(".comment-author .avatar");
+    expect(authorAvatar).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".comment-author")).toHaveTextContent("Priya Patel");
     fireEvent.click(screen.getByRole("button", { name: "Delete issue" }));
     await screen.findByRole("dialog");
     expect(await axe(container)).toHaveNoViolations();

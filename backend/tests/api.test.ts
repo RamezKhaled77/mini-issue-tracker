@@ -1,17 +1,23 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
+import argon2 from "argon2";
 import { createApp } from "../src/app.js";
+import { users } from "../src/db/schema.js";
+import { createUserRecord } from "../src/domain/user.js";
 import type { Express } from "express";
+import type { Db } from "../src/db/client.js";
 
 let app: Express;
+let db: Db;
 
 beforeAll(() => {
-  const { app: createdApp } = createApp({
+  const { app: createdApp, db: createdDb } = createApp({
     dbPath: ":memory:",
     sessionSecret: "test-secret",
     production: false,
   });
   app = createdApp;
+  db = createdDb;
 });
 
 describe("full flow", () => {
@@ -20,15 +26,17 @@ describe("full flow", () => {
   it("signs up", async () => {
     const res = await request(app)
       .post("/api/auth/signup")
-      .send({ email: "alice@example.com", password: "password123" })
+      .send({ name: "Alice Smith", email: "alice@example.com", password: "password123" })
       .expect(201);
     expect(res.body.user.email).toBe("alice@example.com");
+    expect(res.body.user.name).toBe("Alice Smith");
     cookie = res.headers["set-cookie"][0].split(";")[0];
   });
 
   it("gets current user", async () => {
     const res = await request(app).get("/api/auth/me").set("Cookie", cookie).expect(200);
     expect(res.body.user.email).toBe("alice@example.com");
+    expect(res.body.user.name).toBe("Alice Smith");
   });
 
   it("creates a workspace", async () => {
@@ -130,5 +138,79 @@ describe("full flow", () => {
     await request(app).post("/api/auth/signout").set("Cookie", cookie).expect(204);
     const res = await request(app).get("/api/auth/me").set("Cookie", cookie).expect(401);
     expect(res.body.error.code).toBe("UNAUTHORIZED");
+  });
+});
+
+describe("signup name validation (US1)", () => {
+  it("rejects signup without a name", async () => {
+    const res = await request(app)
+      .post("/api/auth/signup")
+      .send({ email: "noname@example.com", password: "password123" })
+      .expect(422);
+    expect(res.body.error.code).toBe("VALIDATION");
+    expect(res.body.error.fields.name).toBe("Full name is required");
+  });
+
+  it("rejects signup with a blank name", async () => {
+    const res = await request(app)
+      .post("/api/auth/signup")
+      .send({ name: "   ", email: "blankname@example.com", password: "password123" })
+      .expect(422);
+    expect(res.body.error.fields.name).toBe("Full name is required");
+  });
+
+  it("rejects signup with an over-long name", async () => {
+    const res = await request(app)
+      .post("/api/auth/signup")
+      .send({ name: "x".repeat(101), email: "longname@example.com", password: "password123" })
+      .expect(422);
+    expect(res.body.error.fields.name).toBeDefined();
+  });
+});
+
+describe("auth security (US1)", () => {
+  let cookie: string;
+
+  it("never exposes passwordHash in auth responses", async () => {
+    const signup = await request(app)
+      .post("/api/auth/signup")
+      .send({ name: "Bob Builder", email: "bob@example.com", password: "password123" })
+      .expect(201);
+    expect(signup.body.user).not.toHaveProperty("passwordHash");
+    expect(signup.body.user).not.toHaveProperty("password_hash");
+    expect(JSON.stringify(signup.body)).not.toContain("passwordHash");
+    expect(JSON.stringify(signup.body)).not.toContain("$argon2");
+
+    cookie = signup.headers["set-cookie"][0].split(";")[0];
+
+    const me = await request(app).get("/api/auth/me").set("Cookie", cookie).expect(200);
+    expect(me.body.user).not.toHaveProperty("passwordHash");
+    expect(JSON.stringify(me.body)).not.toContain("$argon2");
+
+    const signin = await request(app)
+      .post("/api/auth/signin")
+      .send({ email: "bob@example.com", password: "password123" })
+      .expect(200);
+    expect(signin.body.user).not.toHaveProperty("passwordHash");
+    expect(JSON.stringify(signin.body)).not.toContain("$argon2");
+  });
+});
+
+describe("legacy user fallback (US1)", () => {
+  it("resolves the email local-part for a legacy user with null name", async () => {
+    const passwordHash = await argon2.hash("password123");
+    db.insert(users)
+      .values(createUserRecord("legacy@example.com", passwordHash))
+      .run();
+
+    const signin = await request(app)
+      .post("/api/auth/signin")
+      .send({ email: "legacy@example.com", password: "password123" })
+      .expect(200);
+    expect(signin.body.user.name).toBe("legacy");
+    const cookie = signin.headers["set-cookie"][0].split(";")[0];
+
+    const me = await request(app).get("/api/auth/me").set("Cookie", cookie).expect(200);
+    expect(me.body.user.name).toBe("legacy");
   });
 });

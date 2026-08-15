@@ -4,7 +4,7 @@ import { IssueForm } from "../../src/components/IssueForm.js";
 
 vi.mock("../../src/api/client.js", () => ({
   api: {
-    get: vi.fn().mockResolvedValue({ items: [{ id: "l1", name: "bug" }, { id: "l2", name: "ui" }] }),
+    get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
@@ -12,6 +12,19 @@ vi.mock("../../src/api/client.js", () => ({
 }));
 
 import { api } from "../../src/api/client.js";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(api.get).mockImplementation((path: string) => {
+    if (path === "/workspaces/ws-1/labels") {
+      return Promise.resolve({ items: [{ id: "l1", name: "bug" }, { id: "l2", name: "ui" }] });
+    }
+    if (path === "/workspaces/ws-1/members") {
+      return Promise.resolve({ items: [{ userId: "u1", email: "bob@example.com", name: "Bob" }] });
+    }
+    return Promise.resolve({ items: [] });
+  });
+});
 
 function renderForm() {
   return render(
@@ -40,6 +53,12 @@ describe("IssueForm", () => {
     renderForm();
     expect(await screen.findByText("bug")).toBeInTheDocument();
     expect(screen.getByText("ui")).toBeInTheDocument();
+  });
+
+  it("shows member display names in the assignee picker", async () => {
+    renderForm();
+    expect(await screen.findByLabelText("Assignee")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Bob" })).toBeInTheDocument();
   });
 
   it("posts a new issue on submit", async () => {

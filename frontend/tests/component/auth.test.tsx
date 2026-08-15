@@ -119,6 +119,7 @@ describe("LoginPage", () => {
 describe("SignupPage", () => {
   it("focuses the confirm field when passwords do not match", async () => {
     renderWithAuth(<SignupPage />);
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Alice Smith" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "a@b.com" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "secret123" } });
     fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "different" } });
@@ -130,6 +131,31 @@ describe("SignupPage", () => {
       expect(alert).toHaveFocus();
     });
     expect(screen.getByLabelText("Confirm password")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("submits the full name with the signup payload", async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({
+      user: { id: "u1", email: "a@b.com", name: "Alice Smith" },
+    });
+    renderWithAuth(<SignupPage />);
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Alice Smith" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "a@b.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "secret123" } });
+    fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "secret123" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith("/auth/signup", {
+        name: "Alice Smith",
+        email: "a@b.com",
+        password: "secret123",
+      });
+    });
+  });
+
+  it("marks the full name field as required", () => {
+    renderWithAuth(<SignupPage />);
+    expect(screen.getByLabelText("Full name")).toBeRequired();
   });
 });
 

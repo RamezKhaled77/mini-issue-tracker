@@ -19,10 +19,10 @@ export function getApp(): Express {
   return app;
 }
 
-export async function signupAs(email: string, password = "password123"): Promise<string> {
+export async function signupAs(email: string, password = "password123", name = "Test User"): Promise<string> {
   const res = await request(app)
     .post("/api/auth/signup")
-    .send({ email, password })
+    .send({ email, password, name })
     .expect(201);
   return res.headers["set-cookie"][0].split(";")[0];
 }

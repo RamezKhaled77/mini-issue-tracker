@@ -90,3 +90,49 @@ describe("WorkspacePage dashboard freshness", () => {
     expect(dashboardCalls.length).toBe(2);
   });
 });
+
+describe("WorkspacePage assignee (US2)", () => {
+  it("shows the assignee display name on an issue card", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve(dashboardStats(1));
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend", createdAt: "", updatedAt: "" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({
+          items: [
+            {
+              id: "iss-1",
+              projectId: "proj-1",
+              title: "Fix login",
+              description: null,
+              status: "Open",
+              priority: "High",
+              assigneeId: "u-2",
+              assignee: { id: "u-2", name: "Priya Patel" },
+              dueDate: null,
+              labelIds: [],
+            },
+          ],
+        });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({ items: [] });
+      }
+      if (path === "/workspaces/ws-1/members") {
+        return Promise.resolve({ items: [] });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    renderPage();
+
+    expect(await screen.findByText("Fix login")).toBeInTheDocument();
+    expect(screen.getByText("Priya Patel")).toBeInTheDocument();
+    expect(screen.queryByText("u-2")).not.toBeInTheDocument();
+  });
+});

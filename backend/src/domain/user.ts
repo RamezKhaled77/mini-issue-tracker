@@ -4,6 +4,7 @@ export interface UserEntity {
   id: string;
   email: string;
   passwordHash: string;
+  name: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,12 +16,17 @@ export interface SessionEntity {
   createdAt: Date;
 }
 
-export function createUserRecord(email: string, passwordHash: string): UserEntity {
+export function createUserRecord(
+  email: string,
+  passwordHash: string,
+  name: string | null = null
+): UserEntity {
   const now = new Date();
   return {
     id: randomUUID(),
     email,
     passwordHash,
+    name,
     createdAt: now,
     updatedAt: now,
   };

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { memberships, users, workspaces } from "../db/schema.js";
+import { resolveDisplayName } from "../lib/identity.js";
 import { ApiError } from "../api/middleware/error-handler.js";
 
 export interface MembershipServiceDeps {
@@ -64,11 +65,12 @@ export function createMembershipService(deps: MembershipServiceDeps) {
 
   function listMembers(workspaceId: string) {
     return deps.db
-      .select({ userId: users.id, email: users.email })
+      .select({ userId: users.id, email: users.email, name: users.name })
       .from(memberships)
       .innerJoin(users, eq(memberships.userId, users.id))
       .where(eq(memberships.workspaceId, workspaceId))
-      .all();
+      .all()
+      .map((m) => ({ userId: m.userId, email: m.email, name: resolveDisplayName(m.name, m.email) }));
   }
 
   return { isMember, isOwner, requireMember, requireOwner, addMember, removeMember, listMemberIds, listMembers };

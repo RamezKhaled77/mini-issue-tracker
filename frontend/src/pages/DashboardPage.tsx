@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import type { Workspace } from "@mini-issue-tracker/shared";
-import { Invitations } from "../components/Invitations.js";
+import { JoinWorkspace } from "../components/JoinWorkspace.js";
 import { Button } from "../components/Button.js";
 import { Badge } from "../components/Badge.js";
 import { Dialog } from "../components/Dialog.js";
@@ -96,8 +96,6 @@ export function DashboardPage() {
             title="No workspaces yet"
             description="Create your first workspace to start tracking issues."
           />
-          <h2 className="section-title">Join a workspace</h2>
-          <Invitations onJoined={load} />
         </div>
       ) : (
         <ul className="card-list">
@@ -113,6 +111,11 @@ export function DashboardPage() {
           ))}
         </ul>
       )}
+
+      <section className="dashboard-join">
+        <h2 className="section-title">Join a workspace</h2>
+        <JoinWorkspace onJoined={load} />
+      </section>
     </section>
   );
 }

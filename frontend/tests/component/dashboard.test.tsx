@@ -38,6 +38,18 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("button", { name: "Join workspace" })).toBeInTheDocument();
   });
 
+  it("offers the join flow permanently even when workspaces exist", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      items: [{ id: "ws-1", name: "Team Alpha", ownerId: "u1", isOwner: true }],
+    });
+    renderDashboard();
+
+    expect(await screen.findByText("Team Alpha")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Join a workspace" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Paste an invitation token to join")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Join workspace" })).toBeInTheDocument();
+  });
+
   it("redeems a token and refreshes the workspace list", async () => {
     vi.mocked(api.get).mockResolvedValueOnce({ items: [] });
     vi.mocked(api.post).mockResolvedValueOnce({});
@@ -56,7 +68,7 @@ describe("DashboardPage", () => {
       expect(api.post).toHaveBeenCalledWith("/workspaces/join", { token: "token-abc" });
     });
     expect(await screen.findByText("Team Alpha")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Join a workspace" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Join a workspace" })).toBeInTheDocument();
   });
 
   it("shows the join error inline", async () => {

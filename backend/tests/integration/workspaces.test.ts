@@ -1,7 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
+import argon2 from "argon2";
 import type { Express } from "express";
 import { setupApp, signupAs, createWorkspace, createProject, joinWorkspace } from "../helpers.js";
+import { createApp } from "../../src/app.js";
+import { memberships, users, workspaces } from "../../src/db/schema.js";
+import { createUserRecord } from "../../src/domain/user.js";
 
 let app: Express;
 let aliceCookie: string;
@@ -153,5 +157,53 @@ describe("authorization", () => {
       .set("Cookie", outsider)
       .expect(403);
     expect(res.body.error.code).toBe("FORBIDDEN");
+  });
+});
+
+describe("workspace members (US4)", () => {
+  it("returns each member with a resolved name", async () => {
+    const res = await request(app)
+      .get(`/api/workspaces/${wsId}/members`)
+      .set("Cookie", aliceCookie)
+      .expect(200);
+    expect(res.body.items.length).toBeGreaterThanOrEqual(1);
+    for (const member of res.body.items) {
+      expect(member).toHaveProperty("userId");
+      expect(member).toHaveProperty("email");
+      expect(typeof member.name).toBe("string");
+      expect(member.name.length).toBeGreaterThan(0);
+    }
+    const alice = res.body.items.find((m: { email: string }) => m.email === "alice@example.com");
+    expect(alice.name).toBe("Test User");
+  });
+
+  it("resolves the email local-part for a legacy member with null name", async () => {
+    const { app: legacyApp, db } = createApp({
+      dbPath: ":memory:",
+      sessionSecret: "test-secret",
+      production: false,
+    });
+    const passwordHash = await argon2.hash("password123");
+    const legacyUser = createUserRecord("legacy-member@example.com", passwordHash);
+    db.insert(users).values(legacyUser).run();
+    db.insert(workspaces)
+      .values({ id: "ws-legacy", name: "Legacy Workspace", ownerId: legacyUser.id, createdAt: new Date(), updatedAt: new Date() })
+      .run();
+    db.insert(memberships)
+      .values({ userId: legacyUser.id, workspaceId: "ws-legacy", joinedAt: new Date() })
+      .run();
+
+    const signin = await request(legacyApp)
+      .post("/api/auth/signin")
+      .send({ email: "legacy-member@example.com", password: "password123" })
+      .expect(200);
+    const cookie = signin.headers["set-cookie"][0].split(";")[0];
+
+    const res = await request(legacyApp)
+      .get("/api/workspaces/ws-legacy/members")
+      .set("Cookie", cookie)
+      .expect(200);
+    const member = res.body.items.find((m: { email: string }) => m.email === "legacy-member@example.com");
+    expect(member.name).toBe("legacy-member");
   });
 });
