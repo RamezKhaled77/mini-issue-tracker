@@ -32,7 +32,7 @@ describe("security hardening", () => {
     for (let i = 0; i < 8; i += 1) {
       last = await request(app)
         .post("/api/auth/signup")
-        .send({ email: `r${i}@example.com`, password: "password123" });
+        .send({ email: `r${i}@example.com`, password: "password123", name: "Test User" });
     }
     expect(last?.status).toBe(429);
     expect(last?.body.error.code).toBe("RATE_LIMITED");

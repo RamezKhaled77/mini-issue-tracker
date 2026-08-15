@@ -4,9 +4,21 @@ export const ISSUE_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
 export type IssueStatus = (typeof ISSUE_STATUSES)[number];
 export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
 
+export interface Identity {
+  id: string;
+  name: string;
+}
+
 export interface User {
   id: string;
   email: string;
+  name: string;
+}
+
+export interface WorkspaceMember {
+  userId: string;
+  email: string;
+  name: string;
 }
 
 export interface Workspace {
@@ -30,6 +42,7 @@ export interface Issue {
   status: IssueStatus;
   priority: IssuePriority;
   assigneeId: string | null;
+  assignee: Identity | null;
   labelIds: string[];
   dueDate: string | null;
 }
@@ -38,6 +51,7 @@ export interface Comment {
   id: string;
   issueId: string;
   authorId: string;
+  author: Identity;
   body: string;
   createdAt: string;
 }
@@ -75,6 +89,7 @@ export interface ApiErrorShape {
 }
 
 export interface SignupRequest {
+  name: string;
   email: string;
   password: string;
 }

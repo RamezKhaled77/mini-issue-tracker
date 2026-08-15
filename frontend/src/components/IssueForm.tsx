@@ -33,6 +33,7 @@ interface Label {
 interface Member {
   userId: string;
   email: string;
+  name: string;
 }
 
 export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial }: IssueFormProps) {
@@ -140,7 +141,7 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
             <option value="">Unassigned</option>
             {members.map((m) => (
               <option key={m.userId} value={m.userId}>
-                {m.email}
+                {m.name}
               </option>
             ))}
           </select>

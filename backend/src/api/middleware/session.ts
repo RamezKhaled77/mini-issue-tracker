@@ -3,6 +3,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
 import { sessions, users } from "../../db/schema.js";
+import { resolveDisplayName } from "../../lib/identity.js";
 
 const SESSION_COOKIE = "session_id";
 const SESSION_ID_LENGTH = 32;
@@ -10,6 +11,7 @@ const SESSION_ID_LENGTH = 32;
 export interface SessionUser {
   id: string;
   email: string;
+  name: string;
 }
 
 declare global {
@@ -57,14 +59,14 @@ export function createSessionMiddleware(deps: SessionDeps) {
       .get();
     if (!row || row.expiresAt.getTime() < Date.now()) return;
     const user = deps.db
-      .select({ id: users.id, email: users.email })
+      .select({ id: users.id, email: users.email, name: users.name })
       .from(users)
       .where(eq(users.id, row.userId))
       .get();
     if (!user) return;
     req.sessionId = sessionId;
     req.sessionUserId = user.id;
-    req.user = user;
+    req.user = { id: user.id, email: user.email, name: resolveDisplayName(user.name, user.email) };
   }
 
   return async function sessionMiddleware(req: Request, _res: Response, next: NextFunction) {

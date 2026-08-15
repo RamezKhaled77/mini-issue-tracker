@@ -5,6 +5,7 @@ import { api } from "../api/client.js";
 import type { Issue } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "../components/Alert.js";
+import { Avatar } from "../components/Avatar.js";
 import { Badge } from "../components/Badge.js";
 import { Button } from "../components/Button.js";
 import { Dialog } from "../components/Dialog.js";
@@ -17,6 +18,7 @@ interface Comment {
   id: string;
   issueId: string;
   authorId: string;
+  author: { id: string; name: string };
   body: string;
   createdAt: string;
 }
@@ -162,7 +164,14 @@ export function IssuePage() {
               <div className="issue-meta-item">
                 <dt className="issue-meta-label">Assignee</dt>
                 <dd className="issue-meta-value">
-                  {issue.assigneeId ? issue.assigneeId : "Unassigned"}
+                  {issue.assignee ? (
+                    <span className="assignee-name">
+                      <Avatar name={issue.assignee.name} decorative />
+                      {issue.assignee.name}
+                    </span>
+                  ) : (
+                    "Unassigned"
+                  )}
                 </dd>
               </div>
               <div className="issue-meta-item">
@@ -243,7 +252,10 @@ export function IssuePage() {
                 <li key={c.id} className="comment">
                   <p className="comment-body">{c.body}</p>
                   <p className="comment-meta">
-                    <span className="comment-author">{c.authorId}</span>
+                    <span className="comment-author">
+                      <Avatar name={c.author.name} decorative small />
+                      {c.author.name}
+                    </span>
                     {" · "}
                     <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
                   </p>

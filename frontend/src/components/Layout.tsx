@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth.js";
 import { Button } from "./Button.js";
+import { Avatar } from "./Avatar.js";
 
 export function Layout() {
   const { user, signout } = useAuth();
@@ -21,7 +22,15 @@ export function Layout() {
           Mini Issue Tracker
         </Link>
         <nav className="app-nav" aria-label="Account">
-          <span className="app-user">{user?.email}</span>
+          {user && (
+            <>
+              <Avatar name={user.name} />
+              <span className="app-user">
+                <span className="app-user-name">{user.name}</span>
+                <span className="app-user-email">{user.email}</span>
+              </span>
+            </>
+          )}
           <Button type="button" variant="ghost" onClick={handleSignout}>
             Sign out
           </Button>

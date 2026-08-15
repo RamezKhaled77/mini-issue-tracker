@@ -7,6 +7,7 @@ import { IssueForm } from "../components/IssueForm.js";
 import { Invitations } from "../components/Invitations.js";
 import { ProjectDialog } from "../components/ProjectDialog.js";
 import { Alert } from "../components/Alert.js";
+import { Avatar } from "../components/Avatar.js";
 import { Badge } from "../components/Badge.js";
 import type { BadgeTone } from "../components/Badge.js";
 import { Button } from "../components/Button.js";
@@ -258,6 +259,12 @@ export function WorkspacePage() {
                       <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
                         {issue.priority}
                       </Badge>
+                      {issue.assignee && (
+                        <span className="card-assignee">
+                          <Avatar name={issue.assignee.name} decorative small />
+                          {issue.assignee.name}
+                        </span>
+                      )}
                     </span>
                   </Link>
                 </li>

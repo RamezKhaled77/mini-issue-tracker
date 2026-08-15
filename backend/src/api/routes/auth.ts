@@ -31,7 +31,7 @@ export function authRoutes(deps: AuthRouteDeps): Router {
       for (const issue of parsed.error.issues) fields[issue.path.join(".")] = issue.message;
       throw new ApiError(422, "VALIDATION", "Invalid sign-up input", fields);
     }
-    const { user, sessionId, expiresAt } = await authService.signup(parsed.data.email, parsed.data.password);
+    const { user, sessionId, expiresAt } = await authService.signup(parsed.data.email, parsed.data.name, parsed.data.password);
     setSessionCookie(res, sessionId, expiresAt);
     res.status(201).json({ user });
   });

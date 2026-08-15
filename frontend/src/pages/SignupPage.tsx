@@ -11,6 +11,7 @@ import { Button } from "../components/Button.js";
 export function SignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -20,13 +21,17 @@ export function SignupPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     focusAlert(null);
+    if (!name.trim()) {
+      focusAlert({ message: "Full name is required", field: "name" });
+      return;
+    }
     if (password !== confirm) {
       focusAlert({ message: "Passwords do not match", field: "confirm" });
       return;
     }
     setSubmitting(true);
     try {
-      await signup(email, password);
+      await signup(name.trim(), email, password);
       navigate("/", { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
@@ -40,6 +45,7 @@ export function SignupPage() {
     }
   }
 
+  const nameInvalid = alert?.field === "name";
   const emailInvalid = alert?.field === "email";
   const passwordInvalid = alert?.field === "password";
   const confirmInvalid = alert?.field === "confirm";
@@ -50,13 +56,24 @@ export function SignupPage() {
         <h1 className="auth-title">Create account</h1>
         <p className="auth-subtitle">Create an account to start tracking issues.</p>
         <FormAlert id="auth-error" alert={alert} alertRef={alertRef} />
+        <Field label="Full name">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            autoFocus
+            required
+            aria-invalid={nameInvalid || undefined}
+            aria-describedby={nameInvalid ? "auth-error" : undefined}
+          />
+        </Field>
         <Field label="Email">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            autoFocus
             required
             aria-invalid={emailInvalid || undefined}
             aria-describedby={emailInvalid ? "auth-error" : undefined}

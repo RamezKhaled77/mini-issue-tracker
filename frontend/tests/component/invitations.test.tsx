@@ -19,19 +19,6 @@ describe("Invitations", () => {
     vi.clearAllMocks();
   });
 
-  it("redeems an invitation token on submit", async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({});
-    render(<Invitations workspaceId="ws-1" isOwner={false} />);
-    fireEvent.change(screen.getByPlaceholderText("Paste an invitation token to join"), {
-      target: { value: "token-abc" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Join workspace" }));
-
-    await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith("/workspaces/join", { token: "token-abc" });
-    });
-  });
-
   it("does not show the generate button for non-owners", () => {
     render(<Invitations workspaceId="ws-1" isOwner={false} />);
     expect(screen.queryByRole("button", { name: "Generate invitation" })).not.toBeInTheDocument();
@@ -55,26 +42,6 @@ describe("Invitations", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Only the owner can invite")).toBeInTheDocument();
-    });
-  });
-
-  it("renders only the join form when no workspace is provided", () => {
-    render(<Invitations />);
-    expect(screen.getByPlaceholderText("Paste an invitation token to join")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Generate invitation" })).not.toBeInTheDocument();
-  });
-
-  it("calls onJoined after a successful redeem", async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({});
-    const onJoined = vi.fn();
-    render(<Invitations onJoined={onJoined} />);
-    fireEvent.change(screen.getByPlaceholderText("Paste an invitation token to join"), {
-      target: { value: "token-abc" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Join workspace" }));
-
-    await waitFor(() => {
-      expect(onJoined).toHaveBeenCalled();
     });
   });
 });

@@ -14,7 +14,10 @@ let projectId: string;
 let seedDb: ReturnType<typeof createApp>["db"];
 
 async function signup(app: Express, email: string) {
-  const res = await request(app).post("/api/auth/signup").send({ email, password: "password123" }).expect(201);
+  const res = await request(app)
+    .post("/api/auth/signup")
+    .send({ email, password: "password123", name: "Test User" })
+    .expect(201);
   return res.headers["set-cookie"][0].split(";")[0];
 }
 

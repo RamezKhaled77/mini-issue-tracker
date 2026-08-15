@@ -23,6 +23,7 @@ const issue = {
   status: "Open",
   priority: "High",
   assigneeId: null,
+  assignee: null,
   dueDate: null,
   labelIds: [],
 };
@@ -83,5 +84,72 @@ describe("IssuePage delete flow", () => {
       expect(screen.getByText("Not a member of this workspace")).toBeInTheDocument();
     });
     expect(screen.queryByText("workspace landing")).not.toBeInTheDocument();
+  });
+});
+
+describe("IssuePage assignee (US2)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders the assignee display name when assigned", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      issue: { ...issue, assigneeId: "u-2", assignee: { id: "u-2", name: "Priya Patel" } },
+      items: [],
+    });
+    renderPage();
+    expect(await screen.findByText("Priya Patel")).toBeInTheDocument();
+  });
+
+  it("renders Unassigned when no assignee is set", async () => {
+    vi.mocked(api.get).mockResolvedValue({ issue, items: [] });
+    renderPage();
+    expect(await screen.findByText("Unassigned")).toBeInTheDocument();
+    expect(screen.queryByText("u-2")).not.toBeInTheDocument();
+  });
+});
+
+describe("IssuePage comment author (US3)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function mockCommentsWithAuthor(author: { id: string; name: string } | null) {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/issues/iss-1") {
+        return Promise.resolve({ issue, items: [] });
+      }
+      if (path === "/issues/iss-1/comments") {
+        return Promise.resolve({
+          items: [
+            {
+              id: "c1",
+              issueId: "iss-1",
+              authorId: author?.id ?? "u-1",
+              author,
+              body: "On it",
+              createdAt: "2024-01-01T00:00:00Z",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ items: [] });
+    });
+  }
+
+  it("renders each comment author's display name", async () => {
+    mockCommentsWithAuthor({ id: "u-1", name: "Priya Patel" });
+    renderPage();
+    expect(await screen.findByText("On it")).toBeInTheDocument();
+    expect(screen.getByText("Priya Patel")).toBeInTheDocument();
+    expect(screen.queryByText("u-1")).not.toBeInTheDocument();
+  });
+
+  it("renders the email local-part fallback for a legacy author", async () => {
+    mockCommentsWithAuthor({ id: "u-legacy", name: "legacy-commenter" });
+    renderPage();
+    expect(await screen.findByText("On it")).toBeInTheDocument();
+    expect(screen.getByText("legacy-commenter")).toBeInTheDocument();
+    expect(screen.queryByText("u-legacy")).not.toBeInTheDocument();
   });
 });

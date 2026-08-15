@@ -1,7 +1,8 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { issueLabels, issues, labels, memberships } from "../db/schema.js";
+import { issueLabels, issues, labels, memberships, users } from "../db/schema.js";
 import { createIssueRecord, createLabelRecord } from "../domain/issue.js";
+import { resolveDisplayName } from "../lib/identity.js";
 import { ApiError } from "../api/middleware/error-handler.js";
 import type { MembershipService } from "./membership.js";
 import type { ProjectService } from "./project.js";
@@ -101,8 +102,11 @@ export function createIssueService(deps: IssueServiceDeps) {
         priority: issues.priority,
         assigneeId: issues.assigneeId,
         dueDate: issues.dueDate,
+        assigneeName: users.name,
+        assigneeEmail: users.email,
       })
       .from(issues)
+      .leftJoin(users, eq(users.id, issues.assigneeId))
       .where(eq(issues.id, issueId))
       .get();
     if (!issue) throw new ApiError(404, "NOT_FOUND", "Issue not found");
@@ -112,11 +116,15 @@ export function createIssueService(deps: IssueServiceDeps) {
       .from(issueLabels)
       .where(eq(issueLabels.issueId, issueId))
       .all();
+    const { assigneeName, assigneeEmail, ...rest } = issue;
     return {
-      ...issue,
+      ...rest,
       status: issue.status as never,
       priority: issue.priority as never,
       labelIds: labelRows.map((r) => r.labelId),
+      assignee: issue.assigneeId
+        ? { id: issue.assigneeId, name: resolveDisplayName(assigneeName, assigneeEmail ?? "") }
+        : null,
     };
   }
 
@@ -158,8 +166,11 @@ export function createIssueService(deps: IssueServiceDeps) {
         priority: issues.priority,
         assigneeId: issues.assigneeId,
         dueDate: issues.dueDate,
+        assigneeName: users.name,
+        assigneeEmail: users.email,
       })
       .from(issues)
+      .leftJoin(users, eq(users.id, issues.assigneeId))
       .where(where)
       .limit(query.pageSize)
       .offset(offset)
@@ -181,12 +192,18 @@ export function createIssueService(deps: IssueServiceDeps) {
     }
 
     return {
-      items: rows.map((r) => ({
-        ...r,
-        status: r.status as never,
-        priority: r.priority as never,
-        labelIds: labelMap.get(r.id) ?? [],
-      })),
+      items: rows.map((r) => {
+        const { assigneeName, assigneeEmail, ...rest } = r;
+        return {
+          ...rest,
+          status: r.status as never,
+          priority: r.priority as never,
+          labelIds: labelMap.get(r.id) ?? [],
+          assignee: r.assigneeId
+            ? { id: r.assigneeId, name: resolveDisplayName(assigneeName, assigneeEmail ?? "") }
+            : null,
+        };
+      }),
       page: query.page,
       pageSize: query.pageSize,
       total,
