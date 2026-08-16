@@ -15,6 +15,7 @@ import { Dialog } from "../components/Dialog.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { SkeletonRows } from "../components/Skeleton.js";
+import { issueKey } from "../lib/issueKey.js";
 
 interface WorkspaceDetail {
   id: string;
@@ -103,50 +104,48 @@ export function WorkspacePage() {
 
   return (
     <section>
-      <Link to="/" className="back-link">
-        &larr; All workspaces
-      </Link>
-      <h1 className="page-title">{workspace?.name ?? "Workspace"}</h1>
+      <div className="workspace-masthead">
+        <Link to="/" className="back-link">
+          &larr; All workspaces
+        </Link>
+        <h1 className="page-title">{workspace?.name ?? "Workspace"}</h1>
+      </div>
       {error && (
         <Alert role="alert" className="page-alert">
           {error}
         </Alert>
       )}
 
-      <section className="dashboard" aria-label="Issue statistics">
-        <h2 className="section-title">Dashboard</h2>
+      <section className="stat-strip" aria-label="Issue statistics">
         {stats ? (
           <>
-            <div className="stat-grid">
+            <div className="stat-cells">
               {ISSUE_STATUSES.map((s) => (
-                <div key={s} className="stat">
+                <div key={s} className="stat-cell">
                   <span className="stat-value">{stats.byStatus[s] ?? 0}</span>
-                  <span className="stat-label">
-                    <Badge tone={`status-${s.toLowerCase().replace(" ", "-")}` as BadgeTone}>{s}</Badge>
-                  </span>
+                  <span className="stat-label">{s}</span>
                 </div>
               ))}
             </div>
-            <div className="stat-grid stat-grid-priority">
+            <div className="stat-meta">
+              <span className="stat-meta-total">{stats.total} total</span>
               {ISSUE_PRIORITIES.map((p) => (
-                <div key={p} className="stat">
-                  <span className="stat-value">{stats.byPriority[p] ?? 0}</span>
-                  <span className="stat-label">
-                    <Badge tone={`priority-${p.toLowerCase()}` as BadgeTone}>{p}</Badge>
-                  </span>
-                </div>
+                <span
+                  key={p}
+                  className={`stat-meta-item stat-meta-item--${p.toLowerCase()}`}
+                >
+                  {stats.byPriority[p] ?? 0} {p}
+                </span>
               ))}
             </div>
           </>
         ) : (
-          <SkeletonRows rows={2} className="stat-skeleton" />
+          <SkeletonRows rows={1} className="stat-skeleton" />
         )}
       </section>
 
-      <Invitations workspaceId={workspaceId!} isOwner={Boolean(workspace?.isOwner)} />
-
-      <div className="two-col">
-        <div>
+      <div className="workspace-layout">
+        <div className="projects-column">
           <h2 className="section-title">Projects</h2>
           <ProjectDialog
             workspaceId={workspaceId!}
@@ -156,9 +155,10 @@ export function WorkspacePage() {
             onSelectProject={setSelectedProject}
             onProjectsChanged={handleProjectsChanged}
           />
+          <Invitations workspaceId={workspaceId!} isOwner={Boolean(workspace?.isOwner)} />
         </div>
 
-        <div>
+        <div className="issues-column">
           <div className="section-header">
             <h2 className="section-title">Issues</h2>
             {selectedProject && !showForm && (
@@ -190,7 +190,7 @@ export function WorkspacePage() {
 
           {selectedProject && (
             <div className="filter-bar" role="search">
-              <Field label="Search issues" srOnlyLabel className="field-grow">
+              <Field label="Search issues" srOnlyLabel className="field-grow search-field">
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -247,12 +247,22 @@ export function WorkspacePage() {
               description={filtering ? "No issues match your filters." : "Create your first issue in this project."}
             />
           ) : (
-            <ul className="card-list">
+            <ul className="ledger-list">
               {issues.map((issue) => (
                 <li key={issue.id}>
-                  <Link to={`/workspaces/${workspaceId}/issues/${issue.id}`} className="card">
-                    <span className="card-title">{issue.title}</span>
-                    <span className="card-meta">
+                  <Link
+                    to={`/workspaces/${workspaceId}/issues/${issue.id}`}
+                    className="ledger-row"
+                    data-priority={issue.priority.toLowerCase()}
+                  >
+                    <span className="ticket-key">{issueKey(issue.id)}</span>
+                    <span className="ledger-main">
+                      <span className="ledger-title">{issue.title}</span>
+                      {issue.description && (
+                        <span className="ledger-subtitle">{issue.description}</span>
+                      )}
+                    </span>
+                    <span className="ledger-meta">
                       <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
                         {issue.status}
                       </Badge>
@@ -265,6 +275,9 @@ export function WorkspacePage() {
                           {issue.assignee.name}
                         </span>
                       )}
+                    </span>
+                    <span className="ledger-chevron" aria-hidden="true">
+                      &rarr;
                     </span>
                   </Link>
                 </li>

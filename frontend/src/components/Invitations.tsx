@@ -24,7 +24,7 @@ export function Invitations({ workspaceId, isOwner }: InvitationsProps) {
   }
 
   return (
-    <>
+    <div className="invitations">
       {error && (
         <p className="alert alert--error" role="alert">
           {error}
@@ -40,6 +40,6 @@ export function Invitations({ workspaceId, isOwner }: InvitationsProps) {
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }

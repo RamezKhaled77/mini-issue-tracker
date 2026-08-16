@@ -3,7 +3,6 @@ import type { FormEvent } from "react";
 import { api } from "../api/client.js";
 import type { Project } from "@mini-issue-tracker/shared";
 import { Alert } from "./Alert.js";
-import { Badge } from "./Badge.js";
 import { Button } from "./Button.js";
 import { Dialog } from "./Dialog.js";
 import { EmptyState } from "./EmptyState.js";
@@ -182,9 +181,9 @@ export function ProjectDialog({
                   className={`card-selectable card-main${selected ? " card-selected" : ""}`}
                   onClick={() => onSelectProject(p.id)}
                   aria-pressed={selected}
+                  title={p.name}
                 >
                   <span className="card-title">{p.name}</span>
-                  {selected && <Badge tone="status-open">Selected</Badge>}
                 </button>
                 <div className="card-actions">
                   <Button type="button" variant="ghost" onClick={() => openRename(p)}>

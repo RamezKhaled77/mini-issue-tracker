@@ -98,14 +98,23 @@ export function DashboardPage() {
           />
         </div>
       ) : (
-        <ul className="card-list">
+        <ul className="ledger-list dashboard-ledger">
           {workspaces.map((ws) => (
             <li key={ws.id}>
-              <Link to={`/workspaces/${ws.id}`} className="card">
-                <span className="card-title">{ws.name}</span>
-                <Badge tone={ws.isOwner ? "status-open" : "neutral"}>
-                  {ws.isOwner ? "Owner" : "Member"}
-                </Badge>
+              <Link to={`/workspaces/${ws.id}`} className="ledger-row">
+                <span className="app-brand-mark" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M4 5h8M4 8h8M4 11h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="ledger-main">
+                  <span className="ledger-title">{ws.name}</span>
+                </span>
+                <Badge tone="neutral">{ws.isOwner ? "Owner" : "Member"}</Badge>
+                <span className="ledger-chevron" aria-hidden="true">
+                  &rarr;
+                </span>
               </Link>
             </li>
           ))}

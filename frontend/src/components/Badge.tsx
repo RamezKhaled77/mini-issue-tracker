@@ -8,7 +8,8 @@ export type BadgeTone =
   | "priority-medium"
   | "priority-high"
   | "priority-urgent"
-  | "neutral";
+  | "neutral"
+  | "accent";
 
 interface BadgeProps {
   tone: BadgeTone;
