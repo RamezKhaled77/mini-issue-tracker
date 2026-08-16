@@ -53,6 +53,18 @@ export function SignupPage() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <Link to="/login" className="auth-brand">
+          <span className="app-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M4 5h8M4 8h8M4 11h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="app-brand-text">
+            <span className="app-brand-name">Mini</span>
+            <span className="app-brand-sub">Issue Tracker</span>
+          </span>
+        </Link>
         <h1 className="auth-title">Create account</h1>
         <p className="auth-subtitle">Create an account to start tracking issues.</p>
         <FormAlert id="auth-error" alert={alert} alertRef={alertRef} />

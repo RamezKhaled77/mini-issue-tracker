@@ -7,12 +7,14 @@ import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
 import { Badge } from "../components/Badge.js";
+import type { BadgeTone } from "../components/Badge.js";
 import { Button } from "../components/Button.js";
 import { Dialog } from "../components/Dialog.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { IssueForm } from "../components/IssueForm.js";
 import { SkeletonRows } from "../components/Skeleton.js";
+import { issueKey } from "../lib/issueKey.js";
 
 interface Comment {
   id: string;
@@ -37,6 +39,9 @@ export function IssuePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string | null>(null);
+  const [labelNames, setLabelNames] = useState<Record<string, string>>({});
 
   function loadIssue() {
     return api.get<{ issue: Issue }>(`/issues/${issueId}`).then((res) => {
@@ -55,6 +60,45 @@ export function IssuePage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [issueId]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    let cancelled = false;
+    api
+      .get<{ workspace: { name: string } }>(`/workspaces/${workspaceId}`)
+      .then((res) => {
+        if (!cancelled && res.workspace) setWorkspaceName(res.workspace.name);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (!workspaceId || !issue?.projectId) return;
+    let cancelled = false;
+    api
+      .get<{ items: { id: string; name: string }[] }>(`/workspaces/${workspaceId}/projects`)
+      .then((res) => {
+        if (cancelled) return;
+        const found = (res.items ?? []).find((p) => p.id === issue.projectId);
+        if (found) setProjectName(found.name);
+      })
+      .catch(() => {});
+    api
+      .get<{ items: { id: string; name: string }[] }>(`/workspaces/${workspaceId}/labels`)
+      .then((res) => {
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const label of res.items ?? []) map[label.id] = label.name;
+        setLabelNames(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, issue?.projectId]);
 
   async function handleAddComment(e: FormEvent) {
     e.preventDefault();
@@ -115,10 +159,16 @@ export function IssuePage() {
     );
   }
 
+  const resolvedLabels = issue
+    ? issue.labelIds.map((id) => labelNames[id] ?? id)
+    : [];
+
   return (
     <section>
       <Link to={`/workspaces/${workspaceId}`} className="back-link">
-        &larr; Back to workspace
+        {workspaceName && projectName
+          ? `\u2190 ${workspaceName} / ${projectName}`
+          : "\u2190 Back to workspace"}
       </Link>
       {error && (
         <Alert role="alert" className="page-alert">
@@ -127,78 +177,24 @@ export function IssuePage() {
       )}
       {issue && (
         <>
-          <h1 className="page-title">{issue.title}</h1>
-
-          {saved && (
-            <Alert variant="success" className="success-notice">
-              Saved
-            </Alert>
-          )}
-
-          <div className="issue-meta">
-            <dl className="issue-meta-list">
-              <div className="issue-meta-item">
-                <dt className="issue-meta-label">Status</dt>
-                <dd className="issue-meta-value">
-                  <select value={status} onChange={(e) => handleChangeStatus(e.target.value)} aria-label="Status">
-                    {ISSUE_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </dd>
-              </div>
-              <div className="issue-meta-item">
-                <dt className="issue-meta-label">Priority</dt>
-                <dd className="issue-meta-value">
-                  <select value={priority} onChange={(e) => handleChangePriority(e.target.value)} aria-label="Priority">
-                    {ISSUE_PRIORITIES.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                </dd>
-              </div>
-              <div className="issue-meta-item">
-                <dt className="issue-meta-label">Assignee</dt>
-                <dd className="issue-meta-value">
-                  {issue.assignee ? (
-                    <span className="assignee-name">
-                      <Avatar name={issue.assignee.name} decorative />
-                      {issue.assignee.name}
-                    </span>
-                  ) : (
-                    "Unassigned"
-                  )}
-                </dd>
-              </div>
-              <div className="issue-meta-item">
-                <dt className="issue-meta-label">Due date</dt>
-                <dd className="issue-meta-value">{issue.dueDate ? issue.dueDate : "No due date"}</dd>
-              </div>
-              {issue.labelIds.length > 0 && (
-                <div className="issue-meta-item">
-                  <dt className="issue-meta-label">Labels</dt>
-                  <dd className="issue-meta-value">
-                    <span className="badge-row">
-                      {issue.labelIds.map((id) => (
-                        <Badge key={id} tone="neutral">
-                          {id}
-                        </Badge>
-                      ))}
-                    </span>
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </div>
-
-          {issue.description && <p className="issue-description">{issue.description}</p>}
-
-          <div className="issue-actions">
-            <div className="issue-actions-row">
+          <header className="issue-header">
+            <div className="issue-heading">
+              <p className="issue-eyebrow">
+                <span className="issue-key">{issueKey(issue.id)}</span>
+                {" \u00b7 "}
+                <span>Issue</span>
+              </p>
+              <h1 className="page-title">{issue.title}</h1>
+              <p className="issue-meta-line">
+                <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
+                  {issue.status}
+                </Badge>
+                <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
+                  {issue.priority}
+                </Badge>
+              </p>
+            </div>
+            <div className="issue-header-actions">
               <Button type="button" variant="secondary" onClick={() => setEditOpen(true)}>
                 Edit issue
               </Button>
@@ -206,6 +202,127 @@ export function IssuePage() {
                 Delete issue
               </Button>
             </div>
+          </header>
+
+          {saved && (
+            <Alert variant="success" className="success-notice">
+              Saved
+            </Alert>
+          )}
+
+          <div className="issue-layout">
+            <div className="issue-reading">
+              {issue.description && <p className="issue-description">{issue.description}</p>}
+
+              <hr className="issue-divider" />
+
+              <div className="comments-head">
+                <h2 className="section-eyebrow">Comments</h2>
+                <span className="comments-count">{comments.length}</span>
+              </div>
+              {comments.length === 0 ? (
+                <EmptyState title="No comments yet" description="Be the first to comment on this issue." />
+              ) : (
+                <ul className="comment-list">
+                  {comments.map((c) => (
+                    <li key={c.id} className="comment">
+                      <p className="comment-body">{c.body}</p>
+                      <p className="comment-meta">
+                        <span className="comment-author">
+                          <Avatar name={c.author.name} decorative small />
+                          {c.author.name}
+                        </span>
+                        {" \u00b7 "}
+                        <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="comment-composer">
+                <form className="inline-form" onSubmit={handleAddComment}>
+                  <Field label="Comment" srOnlyLabel className="field-grow">
+                    <textarea
+                      value={commentBody}
+                      onChange={(e) => setCommentBody(e.target.value)}
+                      placeholder="Add a comment"
+                      required
+                      rows={3}
+                    />
+                  </Field>
+                  <Button type="submit" variant="primary">
+                    Add comment
+                  </Button>
+                </form>
+              </div>
+            </div>
+
+            <aside className="fact-rail">
+              <h2 className="section-eyebrow">Details</h2>
+              <dl className="fact-list">
+                <div>
+                  <dt className="fact-label">Status</dt>
+                  <dd className="fact-value">
+                    <select value={status} onChange={(e) => handleChangeStatus(e.target.value)} aria-label="Status">
+                      {ISSUE_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="fact-label">Priority</dt>
+                  <dd className="fact-value">
+                    <select value={priority} onChange={(e) => handleChangePriority(e.target.value)} aria-label="Priority">
+                      {ISSUE_PRIORITIES.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="fact-label">Assignee</dt>
+                  <dd className="fact-value">
+                    {issue.assignee ? (
+                      <span className="assignee-name">
+                        <Avatar name={issue.assignee.name} decorative />
+                        {issue.assignee.name}
+                      </span>
+                    ) : (
+                      "Unassigned"
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="fact-label">Due date</dt>
+                  <dd className="fact-value">{issue.dueDate ? issue.dueDate : "No due date"}</dd>
+                </div>
+                {projectName && (
+                  <div>
+                    <dt className="fact-label">Project</dt>
+                    <dd className="fact-value">{projectName}</dd>
+                  </div>
+                )}
+                {resolvedLabels.length > 0 && (
+                  <div>
+                    <dt className="fact-label">Labels</dt>
+                    <dd className="fact-value">
+                      <span className="badge-row">
+                        {resolvedLabels.map((name) => (
+                          <Badge key={name} tone="neutral">
+                            {name}
+                          </Badge>
+                        ))}
+                      </span>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </aside>
           </div>
 
           <Dialog
@@ -242,41 +359,6 @@ export function IssuePage() {
               </Button>
             </div>
           </Dialog>
-
-          <h2 className="section-title">Comments</h2>
-          {comments.length === 0 ? (
-            <EmptyState title="No comments yet" description="Be the first to comment on this issue." />
-          ) : (
-            <ul className="comment-list">
-              {comments.map((c) => (
-                <li key={c.id} className="comment">
-                  <p className="comment-body">{c.body}</p>
-                  <p className="comment-meta">
-                    <span className="comment-author">
-                      <Avatar name={c.author.name} decorative small />
-                      {c.author.name}
-                    </span>
-                    {" · "}
-                    <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form className="inline-form" onSubmit={handleAddComment}>
-            <Field label="Comment" srOnlyLabel className="field-grow">
-              <textarea
-                value={commentBody}
-                onChange={(e) => setCommentBody(e.target.value)}
-                placeholder="Add a comment"
-                required
-                rows={3}
-              />
-            </Field>
-            <Button type="submit" variant="primary">
-              Add comment
-            </Button>
-          </form>
         </>
       )}
     </section>

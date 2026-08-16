@@ -17,7 +17,7 @@ body {
   font-size: var(--text-body);
   color: var(--color-text);
   background: var(--color-bg);
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -33,6 +33,12 @@ figure {
   margin-top: 0;
 }
 
+h1,
+h2,
+h3 {
+  line-height: var(--leading-tight);
+}
+
 button,
 input,
 select,
@@ -43,6 +49,11 @@ textarea {
 
 a {
   color: var(--color-accent);
+}
+
+::selection {
+  background: var(--color-accent-subtle);
+  color: var(--color-text);
 }
 
 /* Global visible focus indicator (WCAG 2.1 AA focusable). */
