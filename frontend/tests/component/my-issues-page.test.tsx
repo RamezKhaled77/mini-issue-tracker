@@ -88,7 +88,7 @@ describe("MyIssuesPage summary (US1)", () => {
     expect(values[0]).toHaveTextContent("1");
     expect(values[1]).toHaveTextContent("1");
     expect(values[2]).toHaveTextContent("1");
-    expect(screen.getByText("Overdue")).toBeInTheDocument();
+    expect(screen.getByText("Overdue", { selector: ".stat-label" })).toBeInTheDocument();
   });
 
   it("zero-data renders 0 assigned to you and the empty state", async () => {
@@ -149,6 +149,29 @@ describe("MyIssuesPage ledger (US2)", () => {
 
     fireEvent.click(await screen.findByText("Open it"));
     expect(await screen.findByText("Issue detail page")).toBeInTheDocument();
+  });
+
+  it("marks overdue rows with the Overdue badge and data-overdue attribute", async () => {
+    vi.mocked(api.get).mockResolvedValue(
+      makeResponse([
+        makeIssue({ id: "iss-1", title: "Late task", dueDate: "2000-01-01", status: "Open" }),
+        makeIssue({ id: "iss-2", title: "On time", dueDate: "2099-01-01", status: "Open" }),
+        makeIssue({ id: "iss-3", title: "Closed late", dueDate: "2000-01-01", status: "Closed" }),
+      ])
+    );
+    renderPage();
+
+    const lateRow = (await screen.findByText("Late task")).closest(".ledger-row") as HTMLElement;
+    expect(within(lateRow).getByText("Overdue")).toBeInTheDocument();
+    expect(lateRow).toHaveAttribute("data-overdue", "true");
+
+    const onTimeRow = screen.getByText("On time").closest(".ledger-row") as HTMLElement;
+    expect(within(onTimeRow).queryByText("Overdue")).not.toBeInTheDocument();
+    expect(onTimeRow).not.toHaveAttribute("data-overdue");
+
+    const closedLateRow = screen.getByText("Closed late").closest(".ledger-row") as HTMLElement;
+    expect(within(closedLateRow).queryByText("Overdue")).not.toBeInTheDocument();
+    expect(closedLateRow).not.toHaveAttribute("data-overdue");
   });
 });
 

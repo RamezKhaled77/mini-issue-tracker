@@ -12,6 +12,7 @@ import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { issueKey } from "../lib/issueKey.js";
+import { isOverdue } from "../lib/isOverdue.js";
 import { labelTone } from "../lib/labelTone.js";
 import { applyMyIssuesView } from "../lib/myIssuesView.js";
 import type { MyIssuesSortKey } from "../lib/myIssuesView.js";
@@ -202,6 +203,7 @@ export function MyIssuesPage() {
                 to={`/workspaces/${issue.workspaceId}/issues/${issue.id}`}
                 className="ledger-row"
                 data-priority={issue.priority.toLowerCase()}
+                data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
               >
                 <span className="ticket-key">{issueKey(issue.id)}</span>
                 <span className="ledger-main">
@@ -214,6 +216,9 @@ export function MyIssuesPage() {
                   <span className="ledger-context">
                     {issue.workspaceName} / {issue.projectName}
                   </span>
+                  {isOverdue(issue.dueDate, issue.status) && (
+                    <Badge tone="danger">Overdue</Badge>
+                  )}
                   <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
                     {issue.status}
                   </Badge>

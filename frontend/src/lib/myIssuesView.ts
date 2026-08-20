@@ -1,5 +1,6 @@
 import type { MyIssue } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES } from "@mini-issue-tracker/shared";
+import { isOverdue } from "./isOverdue.js";
 
 export type MyIssuesSortKey =
   | "default"
@@ -21,14 +22,6 @@ const PRIORITY_ORDER: Record<string, number> = Object.fromEntries(
   ISSUE_PRIORITIES.map((p, i) => [p, i])
 );
 
-function todayString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function isOverdue(item: MyIssue): boolean {
-  return item.dueDate !== null && item.dueDate < todayString() && item.status !== "Closed";
-}
-
 function comparePriority(a: MyIssue, b: MyIssue): number {
   return (PRIORITY_ORDER[b.priority] ?? 0) - (PRIORITY_ORDER[a.priority] ?? 0);
 }
@@ -46,8 +39,8 @@ function compareDueDate(a: MyIssue, b: MyIssue): number {
 
 const COMPARATORS: Record<MyIssuesSortKey, (a: MyIssue, b: MyIssue) => number> = {
   default: (a, b) => {
-    const aOverdue = isOverdue(a);
-    const bOverdue = isOverdue(b);
+    const aOverdue = isOverdue(a.dueDate, a.status);
+    const bOverdue = isOverdue(b.dueDate, b.status);
     if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
     return compareDueDate(a, b) || comparePriority(a, b) || compareTitle(a, b);
   },

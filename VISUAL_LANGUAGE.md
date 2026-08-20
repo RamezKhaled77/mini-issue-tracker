@@ -507,6 +507,24 @@ This extension applies wherever a cross-workspace ledger appears (issue lists,
 search results, related references). Rows still open the normal issue detail
 page via `/workspaces/:workspaceId/issues/:id`.
 
+### Overdue ledger rows
+
+An issue is **overdue** when its due date is before today and it is not
+`Closed` (derived client-side via `frontend/src/lib/isOverdue.ts`; the
+definition matches the backend `overview.overdue` count). Overdue rows get a
+**coral attention treatment** on every ledger that renders issues — the My
+Issues ledger and the workspace project issue ledger:
+
+- a **coral border** around the row (`--color-danger-border`, deepening to
+  `--color-danger` on hover)
+- a **coral tint background** (`--color-danger-bg`)
+- a **coral `Overdue` badge** (`badge--danger`) placed before the status badge
+
+This is the established semantic role of coral in the system (attention
+states, §7) applied to the ledger signature. The priority edge bar, ticket
+key, and other row anatomy remain unchanged — the coral treatment is additive,
+never decorative, and never replaces status/priority colors.
+
 ---
 
 ## 20. Issue Row Hierarchy
