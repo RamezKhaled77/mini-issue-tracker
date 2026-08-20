@@ -332,8 +332,11 @@ Rules:
 - The interface is compact and vertically connected.
 - Avoid excessive empty vertical space that makes the app feel like a landing
   page.
-- Layout: `--layout-max-width: 1200px`, `--layout-gutter: 1.5rem`,
-  `--reading-measure: 68ch`.
+- Layout: `--layout-max-width: 1440px`, `--layout-gutter: 1.5rem`,
+  `--layout-gutter-wide: 2.5rem` (at ≥1280px), and
+  `--reading-measure: 68ch`. The wider cap is for working surfaces with a
+  navigation rail and ledger; individual reading content remains bounded by
+  the reading measure.
 
 ---
 
@@ -377,7 +380,7 @@ has:
 
 The wordmark is more visually important than the navigation.
 
-- Desktop: 232px wide, white surface, hairline right border.
+- Desktop: 240px wide, white surface, hairline right border.
 - Wordmark: petrol 28px ledger-mark (4px radius) + stacked `Mini` (16px bold)
   / `Issue Tracker` (12px semibold uppercase).
 - Navigation: grouped under uppercase mono eyebrows (`WORKSPACE`,
@@ -392,6 +395,21 @@ The wordmark is more visually important than the navigation.
 - Hover: quiet warm surface tint.
 - Footer, separated by a hairline, holds the avatar + name/email and a ghost
   sign-out button.
+- The wordmark has a closing hairline below it. The `PERSONAL` navigation
+  group begins after its own hairline and `--space-4` separation, so the two
+  real navigation contexts are structurally distinct without adding routes.
+- At desktop widths, a small bordered chevron control on the sidebar edge
+  collapses it to the existing 56px icon rail. Width, labels, and the chevron
+  animate with the existing 180ms standard motion; the main workbench expands
+  naturally through the flex layout. The control has an accessible expanded
+  state and is hidden at ≤1024px because that breakpoint already enforces the
+  icon rail. It is also absent from the ≤700px top bar.
+- In every icon-rail state (manual desktop collapse and the ≤1024px responsive
+  rail), interactive sidebar items—brand, collapse control, navigation links,
+  and sign-out—show a compact paper-and-rule tooltip on hover or keyboard
+  focus. Tooltip text repeats the existing accessible name; it adds no unique
+  information. Tooltips are hover/fine-pointer only and are suppressed in the
+  ≤700px mobile top bar.
 
 Do not invent navigation items. Do not add fake `Recent`, `Current workspace`,
 fake project navigation, analytics, settings, or notifications unless the
@@ -433,6 +451,11 @@ The page is **one connected working surface**. The statistics are a ruled strip
 attached to the page — **not** a large "Dashboard" card. There is no generic
 `Dashboard` card anywhere.
 
+On desktop the workbench uses a `minmax(236px, 280px)` project rail and a
+flexible issue ledger, separated by `--space-6` and a rail-side hairline. The
+rail keeps its project list sticky while the ledger has room to scan. This is a
+workspace composition, not a card layout. The rail collapses below 900px.
+
 ---
 
 ## 17. Statistics Strip
@@ -450,6 +473,12 @@ strip closes with a hairline.
 Priority totals sit underneath as subtle metadata: a mono line of small swatch +
 `n Low / n Medium / n High / n Urgent`, plus a total. It reads like a caption,
 not widgets.
+
+The strip has a hairline above and below, with `--space-3` top breathing room.
+Counts use 24px bold tabular type. The count itself may use its existing
+semantic status color (Open/info, In Progress/warning, Closed/success; the My
+Issues overdue count/danger); labels remain faint mono so color never replaces
+the textual status.
 
 ---
 
@@ -486,8 +515,10 @@ Each issue row communicates, in order:
 8. Assignee.
 9. Directional chevron.
 
-The row feels like a real ledger entry. Use approximately **44px row height**
-on desktop.
+The row feels like a real ledger entry. Use a **56px minimum row height** on
+desktop with 12px vertical padding; a wrapped title may naturally make it
+taller. This preserves scan rhythm while giving the primary title and its
+secondary detail enough separation.
 
 The priority edge bar is one of the product's strongest visual signatures. It
 should appear consistently across the issue list, hover states, and the issue
@@ -515,8 +546,9 @@ definition matches the backend `overview.overdue` count). Overdue rows get a
 **coral attention treatment** on every ledger that renders issues — the My
 Issues ledger and the workspace project issue ledger:
 
-- a **coral border** around the row (`--color-danger-border`, deepening to
-  `--color-danger` on hover)
+- a restrained **1px inset coral rule** (`--color-danger-border`, deepening to
+  `--color-danger` on hover), so the normal row separators and ledger geometry
+  remain intact
 - a **coral tint background** (`--color-danger-bg`)
 - a **coral `Overdue` badge** (`badge--danger`) placed before the status badge
 
@@ -605,7 +637,8 @@ card.
 - the `LABELS` value renders each label as a `label-<color>` badge (see
   §9a), so label color identity is preserved on the issue detail page.
 - compact spacing
-- bounded by top/bottom hairlines, sticky on desktop
+- strong top rule, bottom hairline, and a left hairline that separates the
+  inspector from the reading surface; sticky on desktop
 
 Typical fields: Status, Priority, Assignee, Due date, Project, Labels.
 The rail feels like metadata in an editorial document. Empty values render
@@ -643,6 +676,9 @@ The composer is **connected to the comment stream**:
 - a hairline rule separates it from the previous comments
 - textarea
 - bottom-aligned `Add comment` primary button
+
+Comment rows use `--space-4` vertical padding to give authored activity a
+clearer reading rhythm without turning entries into cards.
 
 It must not look like a detached card.
 
@@ -698,6 +734,10 @@ hierarchy must reflect action importance.
 - Search has a quiet magnifier glyph and belongs to the toolbar.
 - Toolbar controls share equal height, aligned borders, consistent radius,
   coherent spacing.
+- The toolbar is a single workbench control surface: it uses `--space-2`
+  internal padding and only top/bottom hairlines on a white surface. Search
+  takes flexible priority (`flex: 2`), then filters, then the quiet result
+  count/clear state. Do not split its controls into independent cards.
 - Field anatomy: label (13px medium) → control → hint/error (13px, faint /
   coral), with proper `aria-invalid` / `aria-describedby`.
 
@@ -723,7 +763,7 @@ feature of its own.
 The visual language must survive from 1280px down to 375px. Responsive behavior
 preserves the same language — it never becomes a different mobile design.
 
-- **≤1100px**: workspace two-column layout collapses; projects panel stops
+- **≤900px**: workspace two-column layout collapses; projects panel stops
   sticking.
 - **≤1024px**: sidebar becomes a compact **icon rail** (56px) — brand, nav,
   user, sign-out keep only icons; issue detail collapses to single column; fact

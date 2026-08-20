@@ -97,6 +97,7 @@ export function LabelsSection({ workspaceId, labels, loading, onChange }: Labels
   return (
     <div className="labels-panel">
       <div className="section-header">
+        <h2 className="section-title">Labels</h2>
         <Button variant="primary" onClick={() => setCreateOpen(true)}>
           New label
         </Button>

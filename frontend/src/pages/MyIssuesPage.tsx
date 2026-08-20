@@ -72,15 +72,15 @@ export function MyIssuesPage() {
         {data ? (
           <>
             <div className="stat-cells">
-              <div className="stat-cell">
+              <div className="stat-cell stat-cell--open">
                 <span className="stat-value">{data.overview.byStatus.Open}</span>
                 <span className="stat-label">Open</span>
               </div>
-              <div className="stat-cell">
+              <div className="stat-cell stat-cell--in-progress">
                 <span className="stat-value">{data.overview.byStatus["In Progress"]}</span>
                 <span className="stat-label">In Progress</span>
               </div>
-              <div className="stat-cell">
+              <div className="stat-cell stat-cell--overdue">
                 <span className="stat-value">{data.overview.overdue}</span>
                 <span className="stat-label">Overdue</span>
               </div>
