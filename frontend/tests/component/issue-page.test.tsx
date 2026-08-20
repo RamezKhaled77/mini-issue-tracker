@@ -26,6 +26,7 @@ const issue = {
   assignee: null,
   dueDate: null,
   labelIds: [],
+  labels: [],
 };
 
 function renderPage() {
@@ -106,6 +107,40 @@ describe("IssuePage assignee (US2)", () => {
     renderPage();
     expect(await screen.findByText("Unassigned")).toBeInTheDocument();
     expect(screen.queryByText("u-2")).not.toBeInTheDocument();
+  });
+});
+
+describe("IssuePage labels", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders embedded labels with their color tone in the fact rail", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      issue: {
+        ...issue,
+        labelIds: ["l1", "l2"],
+        labels: [
+          { id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" },
+          { id: "l2", workspaceId: "ws-1", name: "backend", color: "olive" },
+        ],
+      },
+      items: [],
+    });
+    renderPage();
+    expect(await screen.findByText("bug")).toBeInTheDocument();
+    expect(screen.getByText("backend")).toBeInTheDocument();
+    const rail = document.querySelector(".fact-list");
+    const violetBadge = rail?.querySelector(".badge--label-violet");
+    expect(violetBadge?.textContent).toContain("bug");
+  });
+
+  it("omits the labels row when the issue has no labels", async () => {
+    vi.mocked(api.get).mockResolvedValue({ issue, items: [] });
+    renderPage();
+    await screen.findByRole("button", { name: "Delete issue" });
+    const rows = Array.from(document.querySelectorAll(".fact-list .fact-label"));
+    expect(rows.some((r) => r.textContent === "Labels")).toBe(false);
   });
 });
 

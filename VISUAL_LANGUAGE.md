@@ -230,6 +230,37 @@ badges.
 
 ---
 
+## 9a. Label Color System
+
+A fixed, muted categorical palette for workspace labels. Labels always show
+their name as text, so color is a supporting cue — never the only indicator.
+The palette is deliberately distinct from the brand (petrol), danger (coral),
+status, and priority families.
+
+| Color | Foreground | Background | Border | Token family |
+|-------|-----------|------------|--------|--------------|
+| Violet | `#5B3F9E` | `#F3EFFB` | `#D9CEF0` | `--color-label-violet-*` |
+| Magenta | `#A21C6E` | `#FBEFF6` | `#EFCFE1` | `--color-label-magenta-*` |
+| Indigo | `#4F46A3` | `#EEEDFA` | `#D4D2EF` | `--color-label-indigo-*` |
+| Olive | `#566B1F` | `#F1F4E8` | `#DDE4C9` | `--color-label-olive-*` |
+| Sand | `#7A5A2E` | `#F7F1E7` | `#EADCC6` | `--color-label-sand-*` |
+| Plum | `#7A3B5C` | `#F6EEF2` | `#E8D4DE` | `--color-label-plum-*` |
+
+Usage rules:
+
+- Badge tones: `label-<color>` on `Badge` (e.g. `label-violet`).
+- Color-aware chips in the issue form use a swatch dot plus a tinted selected
+  state in the label's own color family (`.label-chip--<color>`).
+- The label color picker and the management list use the same swatch tokens
+  (`.color-radio-swatch--<color>`, `.label-swatch--<color>`).
+- The mapping from a shared `LabelColor` to a badge tone lives in
+  `frontend/src/lib/labelTone.ts`; unknown colors fall back to `neutral`.
+- The fixed palette means labels are never a new arbitrary color per label.
+  The `LABEL_COLORS` constant in `shared/index.ts` is the single source of
+  truth for valid colors (also enforced by the backend validator).
+
+---
+
 ## 10. Typography
 
 Font stacks (tokens):
@@ -387,6 +418,7 @@ The workspace page is the primary workbench. Its structure, top to bottom:
 4. Priority metadata line
 5. Projects rail
 6. Issues ledger
+7. Labels rail (management list + color picker)
 
 The page is **one connected working surface**. The statistics are a ruled strip
 attached to the page — **not** a large "Dashboard" card. There is no generic
@@ -440,8 +472,10 @@ Each issue row communicates, in order:
 4. Optional short description.
 5. Status.
 6. Priority.
-7. Assignee.
-8. Directional chevron.
+7. Label chips (up to two, in the label's own color tone; a `+N more` text
+   appears when the issue has more).
+8. Assignee.
+9. Directional chevron.
 
 The row feels like a real ledger entry. Use approximately **44px row height**
 on desktop.
@@ -459,7 +493,8 @@ Intended hierarchy: **ticket key → issue title → metadata**.
 - Ticket key: mono, compact, strong enough to scan, not overly faint. On row
   hover it turns petrol.
 - Title: 600 weight, primary visual content.
-- Metadata (status / priority / assignee): must not overpower the title.
+- Metadata (status / priority / label chips / assignee): must not overpower
+  the title.
 
 The trailing arrow is subtle by default (faint, 45% opacity). On hover it
 strengthens slightly, moves a couple of pixels, and turns petrol; the row gains
@@ -526,6 +561,8 @@ card.
 - mono uppercase labels (`STATUS`, `PRIORITY`, `ASSIGNEE`, `DUE DATE`,
   `PROJECT`, `LABELS`)
 - clear values
+- the `LABELS` value renders each label as a `label-<color>` badge (see
+  §9a), so label color identity is preserved on the issue detail page.
 - compact spacing
 - bounded by top/bottom hairlines, sticky on desktop
 

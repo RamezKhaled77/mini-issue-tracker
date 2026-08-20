@@ -68,9 +68,10 @@ describe("full flow", () => {
     const labelRes = await request(app)
       .post(`/api/workspaces/${wsId}/labels`)
       .set("Cookie", cookie)
-      .send({ name: "bug" })
+      .send({ name: "bug", color: "violet" })
       .expect(201);
     const labelId = labelRes.body.label.id;
+    expect(labelRes.body.label.color).toBe("violet");
 
     const issueRes = await request(app)
       .post(`/api/projects/${projectId}/issues`)
@@ -85,6 +86,9 @@ describe("full flow", () => {
       .expect(201);
     expect(issueRes.body.issue.title).toBe("Fix login bug");
     expect(issueRes.body.issue.labelIds).toContain(labelId);
+    expect(issueRes.body.issue.labels).toContainEqual(
+      expect.objectContaining({ id: labelId, name: "bug", color: "violet" })
+    );
     const issueId = issueRes.body.issue.id;
 
     const listRes = await request(app)

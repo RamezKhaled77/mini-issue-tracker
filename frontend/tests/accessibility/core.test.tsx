@@ -13,6 +13,7 @@ import { AuthProvider } from "../../src/context/auth.js";
 import { Layout } from "../../src/components/Layout.js";
 import { DashboardPage } from "../../src/pages/DashboardPage.js";
 import { ProjectDialog } from "../../src/components/ProjectDialog.js";
+import { LabelsSection } from "../../src/components/LabelsSection.js";
 import { WorkspacePage } from "../../src/pages/WorkspacePage.js";
 import { IssuePage } from "../../src/pages/IssuePage.js";
 import { Route, Routes } from "react-router-dom";
@@ -99,6 +100,12 @@ describe("accessibility", () => {
         <Badge tone="priority-medium">Medium</Badge>
         <Badge tone="priority-high">High</Badge>
         <Badge tone="priority-urgent">Urgent</Badge>
+        <Badge tone="label-violet">Violet</Badge>
+        <Badge tone="label-magenta">Magenta</Badge>
+        <Badge tone="label-indigo">Indigo</Badge>
+        <Badge tone="label-olive">Olive</Badge>
+        <Badge tone="label-sand">Sand</Badge>
+        <Badge tone="label-plum">Plum</Badge>
         <Badge tone="neutral">Owner</Badge>
       </>
     );
@@ -352,6 +359,94 @@ describe("accessibility", () => {
       el.focus();
       expect(document.activeElement).toBe(el);
     });
+  });
+
+  it("labels section with create dialog has no axe violations", async () => {
+    const { container } = render(
+      <LabelsSection
+        workspaceId="ws-1"
+        labels={[
+          { id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" },
+          { id: "l2", workspaceId: "ws-1", name: "backend", color: "olive" },
+        ]}
+        loading={false}
+        onChange={async () => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "New label" }));
+    await screen.findByRole("dialog");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("labels section edit dialog has no axe violations", async () => {
+    const { container } = render(
+      <LabelsSection
+        workspaceId="ws-1"
+        labels={[{ id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" }]}
+        loading={false}
+        onChange={async () => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByRole("dialog");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("workspace page with label chips has no axe violations", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve({
+          total: 1,
+          byStatus: { Open: 1, "In Progress": 0, Closed: 0 },
+          byPriority: { Low: 0, Medium: 1, High: 0, Urgent: 0 },
+        });
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend" }] });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({
+          items: [
+            { id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" },
+            { id: "l2", workspaceId: "ws-1", name: "backend", color: "olive" },
+          ],
+        });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({
+          items: [
+            {
+              id: "iss-1",
+              projectId: "proj-1",
+              title: "Logout bug",
+              description: null,
+              status: "Open",
+              priority: "Medium",
+              assigneeId: null,
+              dueDate: null,
+              labelIds: ["l1", "l2"],
+              labels: [
+                { id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" },
+                { id: "l2", workspaceId: "ws-1", name: "backend", color: "olive" },
+              ],
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    const { container } = render(
+      <MemoryRouter initialEntries={["/workspaces/ws-1"]}>
+        <Routes>
+          <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText("Logout bug");
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it("project dialog delete confirmation has a safe cancel path", async () => {

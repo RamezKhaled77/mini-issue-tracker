@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
-import type { Issue, Project } from "@mini-issue-tracker/shared";
+import type { Issue, Label, Project } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { IssueForm } from "../components/IssueForm.js";
 import { Invitations } from "../components/Invitations.js";
+import { LabelsSection } from "../components/LabelsSection.js";
 import { ProjectDialog } from "../components/ProjectDialog.js";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
@@ -16,6 +17,7 @@ import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { issueKey } from "../lib/issueKey.js";
+import { labelTone } from "../lib/labelTone.js";
 
 interface WorkspaceDetail {
   id: string;
@@ -35,11 +37,13 @@ export function WorkspacePage() {
   const [workspace, setWorkspace] = useState<WorkspaceDetail | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [labelFilter, setLabelFilter] = useState("");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,10 +68,16 @@ export function WorkspacePage() {
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
     if (priorityFilter) params.set("priority", priorityFilter);
+    if (labelFilter) params.set("labelId", labelFilter);
     const res = await api.get<{ items: Issue[] }>(
       `/projects/${selectedProject}/issues${params.toString() ? `?${params}` : ""}`
     );
     setIssues(res.items);
+  }
+
+  async function loadLabels() {
+    const res = await api.get<{ items: Label[] }>(`/workspaces/${workspaceId}/labels`);
+    setLabels(res.items);
   }
 
   async function loadStats() {
@@ -94,13 +104,14 @@ export function WorkspacePage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+    loadLabels().catch((err) => setError(err.message));
   }, [workspaceId]);
 
   useEffect(() => {
     loadIssues().catch((err) => setError(err.message));
-  }, [selectedProject, search, statusFilter, priorityFilter]);
+  }, [selectedProject, search, statusFilter, priorityFilter, labelFilter]);
 
-  const filtering = Boolean(search || statusFilter || priorityFilter);
+  const filtering = Boolean(search || statusFilter || priorityFilter || labelFilter);
 
   return (
     <section>
@@ -156,6 +167,12 @@ export function WorkspacePage() {
             onProjectsChanged={handleProjectsChanged}
           />
           <Invitations workspaceId={workspaceId!} isOwner={Boolean(workspace?.isOwner)} />
+          <LabelsSection
+            workspaceId={workspaceId!}
+            labels={labels}
+            loading={loading}
+            onChange={loadLabels}
+          />
         </div>
 
         <div className="issues-column">
@@ -217,6 +234,18 @@ export function WorkspacePage() {
                   ))}
                 </select>
               </Field>
+              {labels.length > 0 && (
+                <Field label="Filter by label" srOnlyLabel>
+                  <select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)}>
+                    <option value="">All labels</option>
+                    {labels.map((label) => (
+                      <option key={label.id} value={label.id}>
+                        {label.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
               <div className="filter-meta">
                 {(filtering || issues.length > 0) && (
                   <span className="filter-count">
@@ -230,6 +259,7 @@ export function WorkspacePage() {
                       setSearch("");
                       setStatusFilter("");
                       setPriorityFilter("");
+                      setLabelFilter("");
                     }}>
                       Clear filters
                     </Button>
@@ -269,6 +299,16 @@ export function WorkspacePage() {
                       <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
                         {issue.priority}
                       </Badge>
+                      {(issue.labels ?? []).slice(0, 2).map((label) => (
+                        <Badge key={label.id} tone={labelTone(label.color)}>
+                          {label.name}
+                        </Badge>
+                      ))}
+                      {(issue.labels ?? []).length > 2 && (
+                        <span className="ledger-more-labels">
+                          +{issue.labels.length - 2} more
+                        </span>
+                      )}
                       {issue.assignee && (
                         <span className="card-assignee">
                           <Avatar name={issue.assignee.name} decorative small />

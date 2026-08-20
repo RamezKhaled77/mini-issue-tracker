@@ -14,12 +14,6 @@ export interface IssueEntity {
   updatedAt: Date;
 }
 
-export interface LabelEntity {
-  id: string;
-  workspaceId: string;
-  name: string;
-}
-
 export function createIssueRecord(
   projectId: string,
   input: {
@@ -44,8 +38,4 @@ export function createIssueRecord(
     createdAt: now,
     updatedAt: now,
   };
-}
-
-export function createLabelRecord(workspaceId: string, name: string): LabelEntity {
-  return { id: randomUUID(), workspaceId, name };
 }

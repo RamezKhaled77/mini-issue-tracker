@@ -91,6 +91,81 @@ describe("WorkspacePage dashboard freshness", () => {
   });
 });
 
+describe("WorkspacePage label filter", () => {
+  it("filters issues by label via labelId query param", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve(dashboardStats(0));
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend", createdAt: "", updatedAt: "" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({ items: [] });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({
+          items: [
+            { id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" },
+            { id: "l2", workspaceId: "ws-1", name: "ui", color: "indigo" },
+          ],
+        });
+      }
+      if (path === "/workspaces/ws-1/members") {
+        return Promise.resolve({ items: [] });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    renderPage();
+
+    const select = await screen.findByLabelText("Filter by label");
+    fireEvent.change(select, { target: { value: "l1" } });
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith(
+        expect.stringContaining("/projects/proj-1/issues?labelId=l1")
+      );
+    });
+  });
+
+  it("clears the label filter via Clear filters", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve(dashboardStats(1));
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend", createdAt: "", updatedAt: "" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({ items: [] });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({ items: [{ id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" }] });
+      }
+      if (path === "/workspaces/ws-1/members") {
+        return Promise.resolve({ items: [] });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    renderPage();
+
+    const select = await screen.findByLabelText("Filter by label");
+    fireEvent.change(select, { target: { value: "l1" } });
+    await screen.findByRole("button", { name: "Clear filters" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText("Filter by label") as HTMLSelectElement).value).toBe("");
+    });
+  });
+});
+
 describe("WorkspacePage assignee (US2)", () => {
   it("shows the assignee display name on an issue card", async () => {
     vi.mocked(api.get).mockImplementation((path: string) => {

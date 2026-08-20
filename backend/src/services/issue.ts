@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { issueLabels, issues, labels, memberships, users } from "../db/schema.js";
-import { createIssueRecord, createLabelRecord } from "../domain/issue.js";
+import { createIssueRecord } from "../domain/issue.js";
 import { resolveDisplayName } from "../lib/identity.js";
 import { ApiError } from "../api/middleware/error-handler.js";
 import type { MembershipService } from "./membership.js";
@@ -43,10 +43,15 @@ export function createIssueService(deps: IssueServiceDeps) {
 
   function validateLabels(workspaceId: string, labelIds: string[]) {
     if (!labelIds.length) return;
+    if (new Set(labelIds).size !== labelIds.length) {
+      throw new ApiError(422, "VALIDATION", "One or more labels are invalid", {
+        labelIds: "Labels must be unique",
+      });
+    }
     const found = deps.db
       .select({ id: labels.id })
       .from(labels)
-      .where(inArray(labels.id, labelIds))
+      .where(and(inArray(labels.id, labelIds), eq(labels.workspaceId, workspaceId)))
       .all();
     const foundIds = new Set(found.map((l) => l.id));
     const missing = labelIds.filter((id) => !foundIds.has(id));
@@ -55,6 +60,25 @@ export function createIssueService(deps: IssueServiceDeps) {
         labelIds: "A label does not exist in this workspace",
       });
     }
+  }
+
+  function buildLabelMap(
+    labelIds: string[]
+  ): Map<string, { id: string; workspaceId: string; name: string; color: string }> {
+    const map = new Map<string, { id: string; workspaceId: string; name: string; color: string }>();
+    if (!labelIds.length) return map;
+    const rows = deps.db
+      .select({
+        id: labels.id,
+        workspaceId: labels.workspaceId,
+        name: labels.name,
+        color: labels.color,
+      })
+      .from(labels)
+      .where(inArray(labels.id, labelIds))
+      .all();
+    for (const r of rows) map.set(r.id, r);
+    return map;
   }
 
   function createIssue(
@@ -115,13 +139,19 @@ export function createIssueService(deps: IssueServiceDeps) {
       .select({ labelId: issueLabels.labelId })
       .from(issueLabels)
       .where(eq(issueLabels.issueId, issueId))
+      .orderBy(sql`rowid`)
       .all();
+    const labelIds = labelRows.map((r) => r.labelId);
+    const labelMap = buildLabelMap(labelIds);
     const { assigneeName, assigneeEmail, ...rest } = issue;
     return {
       ...rest,
       status: issue.status as never,
       priority: issue.priority as never,
-      labelIds: labelRows.map((r) => r.labelId),
+      labelIds,
+      labels: labelIds
+        .map((id) => labelMap.get(id))
+        .filter((l): l is { id: string; workspaceId: string; name: string; color: string } => Boolean(l)),
       assignee: issue.assigneeId
         ? { id: issue.assigneeId, name: resolveDisplayName(assigneeName, assigneeEmail ?? "") }
         : null,
@@ -183,6 +213,7 @@ export function createIssueService(deps: IssueServiceDeps) {
         .select({ issueId: issueLabels.issueId, labelId: issueLabels.labelId })
         .from(issueLabels)
         .where(inArray(issueLabels.issueId, issueIdList))
+        .orderBy(sql`rowid`)
         .all();
       for (const p of pairs) {
         const arr = labelMap.get(p.issueId) ?? [];
@@ -190,15 +221,21 @@ export function createIssueService(deps: IssueServiceDeps) {
         labelMap.set(p.issueId, arr);
       }
     }
+    const allLabelIds = [...new Set([...labelMap.values()].flat())];
+    const labelsById = buildLabelMap(allLabelIds);
 
     return {
       items: rows.map((r) => {
         const { assigneeName, assigneeEmail, ...rest } = r;
+        const ids = labelMap.get(r.id) ?? [];
         return {
           ...rest,
           status: r.status as never,
           priority: r.priority as never,
-          labelIds: labelMap.get(r.id) ?? [],
+          labelIds: ids,
+          labels: ids
+            .map((id) => labelsById.get(id))
+            .filter((l): l is { id: string; workspaceId: string; name: string; color: string } => Boolean(l)),
           assignee: r.assigneeId
             ? { id: r.assigneeId, name: resolveDisplayName(assigneeName, assigneeEmail ?? "") }
             : null,
@@ -240,34 +277,12 @@ export function createIssueService(deps: IssueServiceDeps) {
     deps.db.delete(issues).where(eq(issues.id, issueId)).run();
   }
 
-  function createLabel(workspaceId: string, name: string, userId: string) {
-    deps.membershipService.requireMember(userId, workspaceId);
-    const label = createLabelRecord(workspaceId, name);
-    try {
-      deps.db.insert(labels).values(label).run();
-    } catch {
-      throw new ApiError(409, "CONFLICT", "A label with this name already exists");
-    }
-    return label;
-  }
-
-  function listLabels(workspaceId: string, userId: string) {
-    deps.membershipService.requireMember(userId, workspaceId);
-    return deps.db
-      .select({ id: labels.id, workspaceId: labels.workspaceId, name: labels.name })
-      .from(labels)
-      .where(eq(labels.workspaceId, workspaceId))
-      .all();
-  }
-
   return {
     createIssue,
     getIssue,
     listIssues,
     updateIssue,
     deleteIssue,
-    createLabel,
-    listLabels,
   };
 }
 

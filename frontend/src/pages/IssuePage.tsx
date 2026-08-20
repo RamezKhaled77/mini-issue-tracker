@@ -15,6 +15,7 @@ import { Field } from "../components/Field.js";
 import { IssueForm } from "../components/IssueForm.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { issueKey } from "../lib/issueKey.js";
+import { labelTone } from "../lib/labelTone.js";
 
 interface Comment {
   id: string;
@@ -41,7 +42,6 @@ export function IssuePage() {
   const [loading, setLoading] = useState(true);
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
-  const [labelNames, setLabelNames] = useState<Record<string, string>>({});
 
   function loadIssue() {
     return api.get<{ issue: Issue }>(`/issues/${issueId}`).then((res) => {
@@ -84,15 +84,6 @@ export function IssuePage() {
         if (cancelled) return;
         const found = (res.items ?? []).find((p) => p.id === issue.projectId);
         if (found) setProjectName(found.name);
-      })
-      .catch(() => {});
-    api
-      .get<{ items: { id: string; name: string }[] }>(`/workspaces/${workspaceId}/labels`)
-      .then((res) => {
-        if (cancelled) return;
-        const map: Record<string, string> = {};
-        for (const label of res.items ?? []) map[label.id] = label.name;
-        setLabelNames(map);
       })
       .catch(() => {});
     return () => {
@@ -159,9 +150,7 @@ export function IssuePage() {
     );
   }
 
-  const resolvedLabels = issue
-    ? issue.labelIds.map((id) => labelNames[id] ?? id)
-    : [];
+  const resolvedLabels = issue?.labels ?? [];
 
   return (
     <section>
@@ -312,9 +301,9 @@ export function IssuePage() {
                     <dt className="fact-label">Labels</dt>
                     <dd className="fact-value">
                       <span className="badge-row">
-                        {resolvedLabels.map((name) => (
-                          <Badge key={name} tone="neutral">
-                            {name}
+                        {resolvedLabels.map((label) => (
+                          <Badge key={label.id} tone={labelTone(label.color)}>
+                            {label.name}
                           </Badge>
                         ))}
                       </span>

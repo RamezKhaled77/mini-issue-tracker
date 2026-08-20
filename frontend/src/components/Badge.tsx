@@ -8,6 +8,12 @@ export type BadgeTone =
   | "priority-medium"
   | "priority-high"
   | "priority-urgent"
+  | "label-violet"
+  | "label-magenta"
+  | "label-indigo"
+  | "label-olive"
+  | "label-sand"
+  | "label-plum"
   | "neutral"
   | "accent";
 

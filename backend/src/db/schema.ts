@@ -117,6 +117,7 @@ export const labels = sqliteTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    color: text("color").notNull().default("violet"),
   },
   (table) => ({
     workspaceNameIdx: uniqueIndex("labels_workspace_name_idx").on(table.workspaceId, table.name),

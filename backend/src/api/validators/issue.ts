@@ -7,7 +7,15 @@ export const createIssueSchema = z.object({
   status: z.enum(ISSUE_STATUSES),
   priority: z.enum(ISSUE_PRIORITIES),
   assigneeId: z.string().uuid("Invalid assignee").optional().nullable(),
-  labelIds: z.array(z.string().uuid("Invalid label")).max(50).optional(),
+  labelIds: z
+    .array(z.string().uuid("Invalid label"))
+    .max(50)
+    .superRefine((ids, ctx) => {
+      if (new Set(ids).size !== ids.length) {
+        ctx.addIssue({ code: "custom", message: "Labels must be unique" });
+      }
+    })
+    .optional(),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Due date must be YYYY-MM-DD")
