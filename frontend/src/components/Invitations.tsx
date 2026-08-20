@@ -31,14 +31,17 @@ export function Invitations({ workspaceId, isOwner }: InvitationsProps) {
         </p>
       )}
       {isOwner && (
-        <div className="invite-row">
-          <Button type="button" variant="secondary" onClick={handleGenerateInvite}>
-            Generate invitation
-          </Button>
-          {inviteToken && (
-            <input className="invite-token" readOnly value={inviteToken} aria-label="Invitation token" />
-          )}
-        </div>
+        <>
+          <p className="workspace-tool-eyebrow">Workspace access</p>
+          <div className="invite-row">
+            <Button type="button" variant="secondary" onClick={handleGenerateInvite}>
+              Generate invitation
+            </Button>
+            {inviteToken && (
+              <input className="invite-token" readOnly value={inviteToken} aria-label="Invitation token" />
+            )}
+          </div>
+        </>
       )}
     </div>
   );

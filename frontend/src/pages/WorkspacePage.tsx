@@ -133,7 +133,7 @@ export function WorkspacePage() {
           <>
             <div className="stat-cells">
               {ISSUE_STATUSES.map((s) => (
-                <div key={s} className="stat-cell">
+                <div key={s} className={`stat-cell stat-cell--${s.toLowerCase().replace(" ", "-")}`}>
                   <span className="stat-value">{stats.byStatus[s] ?? 0}</span>
                   <span className="stat-label">{s}</span>
                 </div>

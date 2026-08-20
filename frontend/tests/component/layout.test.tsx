@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "../../src/components/Layout.js";
 import { AuthProvider } from "../../src/context/auth.js";
@@ -83,5 +83,30 @@ describe("Layout My Issues navigation (US3)", () => {
     );
     const link = await screen.findByRole("link", { name: "My Issues" });
     expect(link).toHaveClass("sidebar-link--active");
+  });
+});
+
+describe("Layout sidebar collapse", () => {
+  it("toggles the desktop icon rail with an accessible expanded state", () => {
+    const { container } = renderLayout();
+    const toggle = screen.getByRole("button", { name: "Collapse sidebar" });
+    const sidebar = container.querySelector("#app-sidebar") as HTMLElement;
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Workspaces" })).toHaveAttribute(
+      "data-sidebar-tooltip",
+      "Workspaces"
+    );
+    expect(screen.getByRole("link", { name: "My Issues" })).toHaveAttribute(
+      "data-sidebar-tooltip",
+      "My Issues"
+    );
+    fireEvent.click(toggle);
+    expect(sidebar).toHaveClass("app-sidebar--collapsed");
+    expect(toggle).toHaveAccessibleName("Expand sidebar");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(sidebar).not.toHaveClass("app-sidebar--collapsed");
   });
 });

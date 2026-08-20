@@ -148,8 +148,10 @@
   --space-8: 3rem;
   --space-9: 4rem;
 
-  --layout-max-width: 1200px;
+  /* The workbench needs room for a rail and a live ledger on large screens. */
+  --layout-max-width: 1440px;
   --layout-gutter: 1.5rem;
+  --layout-gutter-wide: 2.5rem;
   --reading-measure: 68ch;
 
   /* --- 1.5 Borders & radius (restrained, structural) --- */
