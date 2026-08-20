@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { WorkspacePage } from "../../src/pages/WorkspacePage.js";
 
@@ -209,5 +209,50 @@ describe("WorkspacePage assignee (US2)", () => {
     expect(await screen.findByText("Fix login")).toBeInTheDocument();
     expect(screen.getByText("Priya Patel")).toBeInTheDocument();
     expect(screen.queryByText("u-2")).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkspacePage overdue ledger rows", () => {
+  it("marks overdue rows with the Overdue badge and data-overdue attribute", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve(dashboardStats(2));
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend", createdAt: "", updatedAt: "" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({
+          items: [
+            { id: "iss-1", projectId: "proj-1", title: "Late task", description: null, status: "Open", priority: "High", assigneeId: null, assignee: null, dueDate: "2000-01-01", labelIds: [] },
+            { id: "iss-2", projectId: "proj-1", title: "On time", description: null, status: "Open", priority: "Medium", assigneeId: null, assignee: null, dueDate: "2099-01-01", labelIds: [] },
+            { id: "iss-3", projectId: "proj-1", title: "Closed late", description: null, status: "Closed", priority: "Low", assigneeId: null, assignee: null, dueDate: "2000-01-01", labelIds: [] },
+          ],
+        });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({ items: [] });
+      }
+      if (path === "/workspaces/ws-1/members") {
+        return Promise.resolve({ items: [] });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    renderPage();
+
+    const lateRow = (await screen.findByText("Late task")).closest(".ledger-row") as HTMLElement;
+    expect(within(lateRow).getByText("Overdue")).toBeInTheDocument();
+    expect(lateRow).toHaveAttribute("data-overdue", "true");
+
+    const onTimeRow = screen.getByText("On time").closest(".ledger-row") as HTMLElement;
+    expect(within(onTimeRow).queryByText("Overdue")).not.toBeInTheDocument();
+    expect(onTimeRow).not.toHaveAttribute("data-overdue");
+
+    const closedLateRow = screen.getByText("Closed late").closest(".ledger-row") as HTMLElement;
+    expect(within(closedLateRow).queryByText("Overdue")).not.toBeInTheDocument();
+    expect(closedLateRow).not.toHaveAttribute("data-overdue");
   });
 });

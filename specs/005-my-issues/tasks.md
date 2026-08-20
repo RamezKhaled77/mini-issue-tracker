@@ -160,6 +160,21 @@ description: "Task list for My Issues feature implementation"
 
 ---
 
+## Phase 9: Overdue Ledger Treatment (enhancement)
+
+**Purpose**: Give overdue issues a distinct coral attention treatment on every ledger row (My Issues + workspace project ledger) so users can spot past-due work at a glance. Derived client-side; matches the backend `overview.overdue` definition.
+
+- [x] T036 [P] Extract shared `frontend/src/lib/isOverdue.ts` (`dueDate < today && status !== "Closed"`, uses `toISOString().slice(0,10)`); refactor `myIssuesView.ts` to use it
+- [x] T037 [P] Add `badge--danger` tone to `frontend/src/components/Badge.tsx` + `frontend/src/styles/components.css` (coral `--color-danger*` tokens, same anatomy as other badges)
+- [x] T038 Add overdue row CSS in `frontend/src/styles/components.css`: `.ledger-row[data-overdue="true"]` gets `--color-danger-border` border + `--color-danger-bg` tint, hover deepens border to `--color-danger`
+- [x] T039 Render `data-overdue` + coral `Overdue` badge in `frontend/src/pages/MyIssuesPage.tsx` (before status badge)
+- [x] T040 Render `data-overdue` + coral `Overdue` badge in `frontend/src/pages/WorkspacePage.tsx` (before status badge)
+- [x] T041 Tests: unit `frontend/tests/component/is-overdue.test.ts`; component tests in `my-issues-page.test.tsx` and `workspace-page.test.tsx` asserting badge + `data-overdue` attribute (overdue Open/In Progress, future-due not overdue, Closed-not-overdue)
+- [x] T042 [P] Update `VISUAL_LANGUAGE.md` §19 (Overdue ledger rows subsection); no new design tokens (reuses `--color-danger*`)
+- [x] T043 Run full verification: `npm run typecheck && npm run lint && npm run build && npm test` plus `npm run test:a11y -w frontend`
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

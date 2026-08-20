@@ -15,7 +15,8 @@ export type BadgeTone =
   | "label-sand"
   | "label-plum"
   | "neutral"
-  | "accent";
+  | "accent"
+  | "danger";
 
 interface BadgeProps {
   tone: BadgeTone;
