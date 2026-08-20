@@ -8,6 +8,7 @@ import { issueRoutes } from "./issues.js";
 import { commentRoutes } from "./comments.js";
 import { dashboardRoutes } from "./dashboard.js";
 import { labelRoutes } from "./labels.js";
+import { myIssuesRoutes } from "./myIssues.js";
 import { createWorkspaceService } from "../../services/workspace.js";
 import { createProjectService } from "../../services/project.js";
 import { createIssueService } from "../../services/issue.js";
@@ -15,6 +16,7 @@ import { createLabelService } from "../../services/label.js";
 import { createCommentService } from "../../services/comment.js";
 import { createDashboardService } from "../../services/dashboard.js";
 import { createMembershipService } from "../../services/membership.js";
+import { createMyIssuesService } from "../../services/myIssues.js";
 
 export interface AppDeps {
   db: Db;
@@ -32,6 +34,7 @@ export function registerRoutes(app: Express, deps: AppDeps) {
   const labelService = createLabelService({ db: deps.db, membershipService });
   const commentService = createCommentService({ db: deps.db, membershipService, projectService });
   const dashboardService = createDashboardService({ db: deps.db, membershipService });
+  const myIssuesService = createMyIssuesService({ db: deps.db, membershipService });
 
   app.use("/api/auth", authRoutes({ ...deps, authService }));
   app.use("/api", workspaceRoutes({ db: deps.db, workspaceService, membershipService }));
@@ -40,4 +43,5 @@ export function registerRoutes(app: Express, deps: AppDeps) {
   app.use("/api", commentRoutes({ db: deps.db, commentService }));
   app.use("/api", labelRoutes({ db: deps.db, labelService, membershipService }));
   app.use("/api", dashboardRoutes({ db: deps.db, dashboardService }));
+  app.use("/api", myIssuesRoutes({ db: deps.db, myIssuesService }));
 }

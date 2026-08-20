@@ -20,6 +20,8 @@ Built with a React SPA, an Express API, and SQLite (Drizzle ORM).
 - Search and filter issues within a project (title/description, status,
   priority, assignee, label)
 - Per-workspace dashboard counts by status and priority
+- My Issues — cross-workspace assigned workload (open/in-progress/overdue
+  counts plus a searchable ledger of the user's assigned issues)
 
 ## Requirements
 

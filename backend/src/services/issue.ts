@@ -3,6 +3,7 @@ import type { Db } from "../db/client.js";
 import { issueLabels, issues, labels, memberships, users } from "../db/schema.js";
 import { createIssueRecord } from "../domain/issue.js";
 import { resolveDisplayName } from "../lib/identity.js";
+import { buildLabelMap } from "../lib/labels.js";
 import { ApiError } from "../api/middleware/error-handler.js";
 import type { MembershipService } from "./membership.js";
 import type { ProjectService } from "./project.js";
@@ -60,25 +61,6 @@ export function createIssueService(deps: IssueServiceDeps) {
         labelIds: "A label does not exist in this workspace",
       });
     }
-  }
-
-  function buildLabelMap(
-    labelIds: string[]
-  ): Map<string, { id: string; workspaceId: string; name: string; color: string }> {
-    const map = new Map<string, { id: string; workspaceId: string; name: string; color: string }>();
-    if (!labelIds.length) return map;
-    const rows = deps.db
-      .select({
-        id: labels.id,
-        workspaceId: labels.workspaceId,
-        name: labels.name,
-        color: labels.color,
-      })
-      .from(labels)
-      .where(inArray(labels.id, labelIds))
-      .all();
-    for (const r of rows) map.set(r.id, r);
-    return map;
   }
 
   function createIssue(
@@ -142,7 +124,7 @@ export function createIssueService(deps: IssueServiceDeps) {
       .orderBy(sql`rowid`)
       .all();
     const labelIds = labelRows.map((r) => r.labelId);
-    const labelMap = buildLabelMap(labelIds);
+    const labelMap = buildLabelMap(deps.db, labelIds);
     const { assigneeName, assigneeEmail, ...rest } = issue;
     return {
       ...rest,
@@ -222,7 +204,7 @@ export function createIssueService(deps: IssueServiceDeps) {
       }
     }
     const allLabelIds = [...new Set([...labelMap.values()].flat())];
-    const labelsById = buildLabelMap(allLabelIds);
+    const labelsById = buildLabelMap(deps.db, allLabelIds);
 
     return {
       items: rows.map((r) => {

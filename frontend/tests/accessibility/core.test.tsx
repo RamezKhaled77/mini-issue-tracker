@@ -16,6 +16,7 @@ import { ProjectDialog } from "../../src/components/ProjectDialog.js";
 import { LabelsSection } from "../../src/components/LabelsSection.js";
 import { WorkspacePage } from "../../src/pages/WorkspacePage.js";
 import { IssuePage } from "../../src/pages/IssuePage.js";
+import { MyIssuesPage } from "../../src/pages/MyIssuesPage.js";
 import { Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
 
@@ -464,6 +465,91 @@ describe("accessibility", () => {
     fireEvent.click(within(row).getByRole("button", { name: "Delete" }));
     await screen.findByRole("dialog");
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("my issues page with populated ledger has no axe violations", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      overview: {
+        total: 2,
+        byStatus: { Open: 1, "In Progress": 1, Closed: 0 },
+        overdue: 1,
+      },
+      items: [
+        {
+          id: "iss-1",
+          projectId: "proj-1",
+          title: "Logout bug",
+          description: null,
+          status: "Open",
+          priority: "High",
+          assigneeId: "u2",
+          assignee: { id: "u2", name: "Sam Rivera" },
+          dueDate: "2000-01-01",
+          labelIds: [],
+          labels: [],
+          workspaceId: "ws-1",
+          projectName: "Frontend",
+          workspaceName: "Alpha",
+        },
+        {
+          id: "iss-2",
+          projectId: "proj-2",
+          title: "Ship nav",
+          description: null,
+          status: "In Progress",
+          priority: "Medium",
+          assigneeId: "u1",
+          assignee: { id: "u1", name: "Priya Patel" },
+          dueDate: null,
+          labelIds: [],
+          labels: [],
+          workspaceId: "ws-2",
+          projectName: "Backend",
+          workspaceName: "Beta",
+        },
+      ],
+    });
+    const { container } = render(
+      <MemoryRouter initialEntries={["/my-issues"]}>
+        <Routes>
+          <Route path="/my-issues" element={<MyIssuesPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText("Logout bug");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("my issues page empty state has no axe violations", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      overview: {
+        total: 0,
+        byStatus: { Open: 0, "In Progress": 0, Closed: 0 },
+        overdue: 0,
+      },
+      items: [],
+    });
+    const { container } = render(
+      <MemoryRouter initialEntries={["/my-issues"]}>
+        <Routes>
+          <Route path="/my-issues" element={<MyIssuesPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText("No issues assigned to you");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("sidebar My Issues link is keyboard-reachable and axe-clean", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      user: { id: "u1", email: "alice@example.com", name: "Alice Smith" },
+      items: [],
+    });
+    const { container } = renderAuthed(<Layout />);
+    const link = await screen.findByRole("link", { name: /My Issues/ });
+    link.focus();
+    expect(document.activeElement).toBe(link);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

@@ -46,6 +46,20 @@ export function Layout() {
             <span className="sidebar-text">Workspaces</span>
           </NavLink>
         </nav>
+        <nav className="sidebar-nav" aria-label="Personal">
+          <span className="sidebar-eyebrow">Personal</span>
+          <NavLink
+            to="/my-issues"
+            className={({ isActive }) =>
+              isActive ? "sidebar-link sidebar-link--active" : "sidebar-link"
+            }
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 2.5h10v11H3zM3 6h10M6.5 9.5h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="sidebar-text">My Issues</span>
+          </NavLink>
+        </nav>
         <div className="sidebar-footer">
           {user && (
             <div className="sidebar-user">

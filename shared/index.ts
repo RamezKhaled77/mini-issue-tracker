@@ -50,6 +50,23 @@ export interface Issue {
   dueDate: string | null;
 }
 
+export interface MyIssue extends Issue {
+  workspaceId: string;
+  projectName: string;
+  workspaceName: string;
+}
+
+export interface MyIssuesOverview {
+  total: number;
+  byStatus: Record<IssueStatus, number>;
+  overdue: number;
+}
+
+export interface MyIssuesResponse {
+  overview: MyIssuesOverview;
+  items: MyIssue[];
+}
+
 export interface Comment {
   id: string;
   issueId: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "../../src/components/Layout.js";
 import { AuthProvider } from "../../src/context/auth.js";
 
@@ -54,5 +54,34 @@ describe("Layout user identity (US1)", () => {
     renderLayout();
     const avatar = await screen.findByRole("img", { name: "bob" });
     expect(avatar).toHaveTextContent("B");
+  });
+});
+
+describe("Layout My Issues navigation (US3)", () => {
+  it("renders the My Issues NavLink under a Personal eyebrow", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      user: { id: "u1", email: "alice@example.com", name: "Alice Smith" },
+    });
+    renderLayout();
+    const link = await screen.findByRole("link", { name: "My Issues" });
+    expect(link).toBeInTheDocument();
+    expect(screen.getByText("Personal")).toBeInTheDocument();
+  });
+
+  it("marks the My Issues NavLink active on the my-issues route", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      user: { id: "u1", email: "alice@example.com", name: "Alice Smith" },
+    });
+    render(
+      <MemoryRouter initialEntries={["/my-issues"]}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/my-issues" element={<Layout />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>
+    );
+    const link = await screen.findByRole("link", { name: "My Issues" });
+    expect(link).toHaveClass("sidebar-link--active");
   });
 });
