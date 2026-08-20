@@ -6,6 +6,7 @@ import { SignupPage } from "./pages/SignupPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { WorkspacePage } from "./pages/WorkspacePage.js";
 import { IssuePage } from "./pages/IssuePage.js";
+import { MyIssuesPage } from "./pages/MyIssuesPage.js";
 import { Layout } from "./components/Layout.js";
 import { SkeletonRows } from "./components/Skeleton.js";
 
@@ -30,6 +31,7 @@ export function App() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="my-issues" element={<MyIssuesPage />} />
         <Route path="workspaces/:workspaceId" element={<WorkspacePage />} />
         <Route path="workspaces/:workspaceId/issues/:issueId" element={<IssuePage />} />
       </Route>

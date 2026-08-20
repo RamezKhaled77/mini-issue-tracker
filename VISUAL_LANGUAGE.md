@@ -370,6 +370,8 @@ has:
 - Mini / Issue Tracker wordmark
 - `WORKSPACE` eyebrow
 - Workspaces navigation
+- `PERSONAL` eyebrow
+- My Issues navigation
 - user identity
 - sign out
 
@@ -378,6 +380,12 @@ The wordmark is more visually important than the navigation.
 - Desktop: 232px wide, white surface, hairline right border.
 - Wordmark: petrol 28px ledger-mark (4px radius) + stacked `Mini` (16px bold)
   / `Issue Tracker` (12px semibold uppercase).
+- Navigation: grouped under uppercase mono eyebrows (`WORKSPACE`,
+  `PERSONAL`), reusing the same `.sidebar-link` / `.sidebar-link--active`
+  treatment for both groups. **My Issues** (a 16px stroke inbox-style icon +
+  label) sits under `PERSONAL`, directly below Workspaces and above the
+  footer. It collapses to the icon rail at ≤1024px and to the top bar at
+  ≤700px exactly like the rest of the navigation.
 - Active navigation state: **subtle petrol left accent rule + subtle tint**
   (`--color-accent-subtle` background, 3px petrol left rule, petrol text,
   semibold) — **not** a large rounded pill.
@@ -388,7 +396,8 @@ The wordmark is more visually important than the navigation.
 Do not invent navigation items. Do not add fake `Recent`, `Current workspace`,
 fake project navigation, analytics, settings, or notifications unless the
 application actually gains those features. **Visual design must reflect real
-product data and real navigation.**
+product data and real navigation.** `PERSONAL → My Issues` exists because the
+product genuinely aggregates the signed-in user's assigned issues.
 
 ---
 
@@ -483,6 +492,20 @@ on desktop.
 The priority edge bar is one of the product's strongest visual signatures. It
 should appear consistently across the issue list, hover states, and the issue
 detail identity where appropriate.
+
+### Cross-workspace ledger (My Issues)
+
+When a ledger mixes rows from several workspaces (the **My Issues** page), each
+row carries a quiet **workspace/project context caption** (`.ledger-context`,
+`WorkspaceName / ProjectName`) placed directly before the status badge. It
+uses the same visual family as the assignee caption: mono (`--text-mono`),
+faint `--color-text-faint`, tabular-nums, `white-space: nowrap`. It must stay
+quieter than the status/priority badges so the title and metadata hierarchy
+from §20 is preserved.
+
+This extension applies wherever a cross-workspace ledger appears (issue lists,
+search results, related references). Rows still open the normal issue detail
+page via `/workspaces/:workspaceId/issues/:id`.
 
 ---
 
@@ -827,6 +850,21 @@ Reuse:
 - fact-sheet patterns
 
 A new page should feel like another chapter of the same product.
+
+The **My Issues** page is an instance of the standard editorial page
+structure: `page-header` ("My Issues") → statistics strip (OPEN / IN
+PROGRESS / OVERDUE counts plus an "N assigned to you" mono total) → include-
+closed control → ticket ledger (reusing `.ledger-row`, see §19). It is a
+ruled ledger surface, not a dashboard of cards. Its stats are informational
+and never filter the ledger.
+
+The My Issues page also hosts a **search / filter / sort bar** (reusing the
+`filter-bar` pattern from the workspace issues column, see §29): a text
+search on title/description, status and priority selects, and a sort select
+(default order, due date, priority, title — each ascending or descending).
+Narrowing is client-side over the already-fetched list; the summary strip
+keeps reporting the real global totals. A quiet mono result count and a
+`Clear filters` affordance close the bar.
 
 ---
 
