@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api, ApiError } from "../api/client.js";
-import type { Issue } from "@mini-issue-tracker/shared";
+import type { Issue, Label } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "./Alert.js";
 import { Button } from "./Button.js";
@@ -23,11 +23,6 @@ export interface IssueFormProps {
   onSubmit: () => Promise<void> | void;
   onCancel: () => void;
   initial?: Issue | null;
-}
-
-interface Label {
-  id: string;
-  name: string;
 }
 
 interface Member {
@@ -152,14 +147,14 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
           <span className="field-label">Labels</span>
           <div className="label-picker">
             {labels.map((label) => (
-              <label key={label.id} className="label-chip">
-                <input
-                  type="checkbox"
-                  checked={labelIds.includes(label.id)}
-                  onChange={() => toggleLabel(label.id)}
-                />
-                {label.name}
-              </label>
+              <label key={label.id} className={`label-chip label-chip--${label.color}`}>
+                  <input
+                    type="checkbox"
+                    checked={labelIds.includes(label.id)}
+                    onChange={() => toggleLabel(label.id)}
+                  />
+                  {label.name}
+                </label>
             ))}
           </div>
         </div>

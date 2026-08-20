@@ -135,27 +135,137 @@ describe("assignee validation", () => {
 });
 
 describe("labels", () => {
-  it("creates a workspace label", async () => {
-    const res = await request(app)
+  let bugId: string;
+  let uiId: string;
+
+  beforeAll(async () => {
+    const bug = await request(app)
       .post(`/api/workspaces/${wsId}/labels`)
       .set("Cookie", cookie)
-      .send({ name: "bug" })
+      .send({ name: "bug", color: "violet" })
       .expect(201);
-    expect(res.body.label.name).toBe("bug");
+    bugId = bug.body.label.id;
+    const ui = await request(app)
+      .post(`/api/workspaces/${wsId}/labels`)
+      .set("Cookie", cookie)
+      .send({ name: "ui", color: "magenta" })
+      .expect(201);
+    uiId = ui.body.label.id;
   });
 
-  it("creates an issue with labels and returns them", async () => {
-    const labels = await request(app)
-      .get(`/api/workspaces/${wsId}/labels`)
-      .set("Cookie", cookie)
-      .expect(200);
-    const labelId = labels.body.items[0].id;
+  it("creates an issue with labels and returns embedded labels", async () => {
     const res = await request(app)
       .post(`/api/projects/${projectId}/issues`)
       .set("Cookie", cookie)
-      .send({ title: "Labeled", status: "Open", priority: "Medium", labelIds: [labelId] })
+      .send({ title: "Labeled", status: "Open", priority: "Medium", labelIds: [bugId, uiId] })
       .expect(201);
-    expect(res.body.issue.labelIds).toContain(labelId);
+    expect(res.body.issue.labelIds).toEqual(expect.arrayContaining([bugId, uiId]));
+    expect(res.body.issue.labels).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: bugId, name: "bug", color: "violet" }),
+        expect.objectContaining({ id: uiId, name: "ui", color: "magenta" }),
+      ])
+    );
+  });
+
+  it("keeps embedded labels on get and list", async () => {
+    const list = await request(app)
+      .get(`/api/projects/${projectId}/issues?search=Labeled`)
+      .set("Cookie", cookie)
+      .expect(200);
+    const item = list.body.items.find((i: { title: string }) => i.title === "Labeled");
+    expect(item.labels.length).toBe(2);
+    expect(item.labels[0].id).toBe(bugId);
+    expect(item.labels[0].name).toBe("bug");
+    expect(item.labels[0].color).toBe("violet");
+
+    const get = await request(app).get(`/api/issues/${item.id}`).set("Cookie", cookie).expect(200);
+    expect(get.body.issue.labels).toEqual(expect.arrayContaining([expect.objectContaining({ id: uiId })]));
+  });
+
+  it("assigns and removes labels via PATCH replace-all", async () => {
+    const created = await request(app)
+      .post(`/api/projects/${projectId}/issues`)
+      .set("Cookie", cookie)
+      .send({ title: "Re-label me", status: "Open", priority: "Low" })
+      .expect(201);
+    const id = created.body.issue.id;
+
+    const added = await request(app)
+      .patch(`/api/issues/${id}`)
+      .set("Cookie", cookie)
+      .send({ labelIds: [bugId] })
+      .expect(200);
+    expect(added.body.issue.labelIds).toEqual([bugId]);
+
+    const removed = await request(app)
+      .patch(`/api/issues/${id}`)
+      .set("Cookie", cookie)
+      .send({ labelIds: [] })
+      .expect(200);
+    expect(removed.body.issue.labelIds).toEqual([]);
+    expect(removed.body.issue.labels).toEqual([]);
+  });
+
+  it("filters issues by a single label via labelId", async () => {
+    const res = await request(app)
+      .get(`/api/projects/${projectId}/issues?labelId=${bugId}`)
+      .set("Cookie", cookie)
+      .expect(200);
+    expect(res.body.items.length).toBeGreaterThan(0);
+    expect(res.body.items.every((i: { labelIds: string[] }) => i.labelIds.includes(bugId))).toBe(true);
+  });
+
+  it("rejects duplicate labelIds in one request", async () => {
+    const res = await request(app)
+      .post(`/api/projects/${projectId}/issues`)
+      .set("Cookie", cookie)
+      .send({ title: "Dup labels", status: "Open", priority: "Medium", labelIds: [bugId, bugId] })
+      .expect(422);
+    expect(res.body.error.code).toBe("VALIDATION");
+    expect(res.body.error.fields.labelIds).toBeDefined();
+  });
+
+  it("rejects a label from another workspace (cross-workspace isolation)", async () => {
+    const otherCookie = await signupAs("other-ws@example.com");
+    const otherWs = await createWorkspace(otherCookie, "Other Team");
+    const foreign = await request(app)
+      .post(`/api/workspaces/${otherWs}/labels`)
+      .set("Cookie", otherCookie)
+      .send({ name: "foreign", color: "olive" })
+      .expect(201);
+    const foreignId = foreign.body.label.id;
+
+    const res = await request(app)
+      .post(`/api/projects/${projectId}/issues`)
+      .set("Cookie", cookie)
+      .send({ title: "Foreign label", status: "Open", priority: "Medium", labelIds: [foreignId] })
+      .expect(422);
+    expect(res.body.error.code).toBe("VALIDATION");
+    expect(res.body.error.fields.labelIds).toBeDefined();
+  });
+
+  it("keeps issues intact when a referenced label is deleted", async () => {
+    const temp = await request(app)
+      .post(`/api/workspaces/${wsId}/labels`)
+      .set("Cookie", cookie)
+      .send({ name: "temp", color: "plum" })
+      .expect(201);
+    const tempId = temp.body.label.id;
+
+    const created = await request(app)
+      .post(`/api/projects/${projectId}/issues`)
+      .set("Cookie", cookie)
+      .send({ title: "Temp labeled", status: "Open", priority: "Medium", labelIds: [tempId] })
+      .expect(201);
+    const issueId = created.body.issue.id;
+
+    await request(app).delete(`/api/labels/${tempId}`).set("Cookie", cookie).expect(204);
+
+    const res = await request(app).get(`/api/issues/${issueId}`).set("Cookie", cookie).expect(200);
+    expect(res.body.issue.title).toBe("Temp labeled");
+    expect(res.body.issue.labelIds).not.toContain(tempId);
+    expect(res.body.issue.labels.every((l: { id: string }) => l.id !== tempId)).toBe(true);
   });
 });
 

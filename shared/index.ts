@@ -1,8 +1,10 @@
 export const ISSUE_STATUSES = ["Open", "In Progress", "Closed"] as const;
 export const ISSUE_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
+export const LABEL_COLORS = ["violet", "magenta", "indigo", "olive", "sand", "plum"] as const;
 
 export type IssueStatus = (typeof ISSUE_STATUSES)[number];
 export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
+export type LabelColor = (typeof LABEL_COLORS)[number];
 
 export interface Identity {
   id: string;
@@ -44,6 +46,7 @@ export interface Issue {
   assigneeId: string | null;
   assignee: Identity | null;
   labelIds: string[];
+  labels: Label[];
   dueDate: string | null;
 }
 
@@ -60,6 +63,7 @@ export interface Label {
   id: string;
   workspaceId: string;
   name: string;
+  color: LabelColor;
 }
 
 export interface Invitation {
@@ -133,6 +137,12 @@ export interface CreateCommentRequest {
 
 export interface CreateLabelRequest {
   name: string;
+  color: LabelColor;
+}
+
+export interface UpdateLabelRequest {
+  name?: string;
+  color?: LabelColor;
 }
 
 export interface IssueQueryParams {

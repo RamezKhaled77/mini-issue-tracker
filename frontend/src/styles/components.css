@@ -233,6 +233,44 @@
   color: var(--color-accent);
 }
 
+/* Label color system — categorical muted chips; a label always shows its
+   name, so the badge dot is the color cue rather than the background. */
+.badge--label-violet {
+  background: var(--color-label-violet-bg);
+  border-color: var(--color-label-violet-border);
+  color: var(--color-label-violet-text);
+}
+
+.badge--label-magenta {
+  background: var(--color-label-magenta-bg);
+  border-color: var(--color-label-magenta-border);
+  color: var(--color-label-magenta-text);
+}
+
+.badge--label-indigo {
+  background: var(--color-label-indigo-bg);
+  border-color: var(--color-label-indigo-border);
+  color: var(--color-label-indigo-text);
+}
+
+.badge--label-olive {
+  background: var(--color-label-olive-bg);
+  border-color: var(--color-label-olive-border);
+  color: var(--color-label-olive-text);
+}
+
+.badge--label-sand {
+  background: var(--color-label-sand-bg);
+  border-color: var(--color-label-sand-border);
+  color: var(--color-label-sand-text);
+}
+
+.badge--label-plum {
+  background: var(--color-label-plum-bg);
+  border-color: var(--color-label-plum-border);
+  color: var(--color-label-plum-text);
+}
+
 /* ---------------------------------------------------------------------------
    Fields
    -------------------------------------------------------------------------- */
@@ -988,6 +1026,12 @@
   flex-shrink: 0;
 }
 
+.ledger-more-labels {
+  font-size: var(--text-label);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
 .ledger-chevron {
   color: var(--color-text-faint);
   opacity: 0.45;
@@ -1395,15 +1439,219 @@
   border-color: var(--color-border-strong);
 }
 
+.label-chip::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-xs);
+  background: var(--label-chip-swatch, var(--color-border-strong));
+  flex-shrink: 0;
+}
+
+.label-chip--violet {
+  --label-chip-swatch: var(--color-label-violet-text);
+}
+
+.label-chip--magenta {
+  --label-chip-swatch: var(--color-label-magenta-text);
+}
+
+.label-chip--indigo {
+  --label-chip-swatch: var(--color-label-indigo-text);
+}
+
+.label-chip--olive {
+  --label-chip-swatch: var(--color-label-olive-text);
+}
+
+.label-chip--sand {
+  --label-chip-swatch: var(--color-label-sand-text);
+}
+
+.label-chip--plum {
+  --label-chip-swatch: var(--color-label-plum-text);
+}
+
 .label-chip:has(input:checked) {
   border-color: var(--color-accent);
   background: var(--color-accent-subtle);
   color: var(--color-accent);
 }
 
+.label-chip--violet:has(input:checked) {
+  border-color: var(--color-label-violet-border);
+  background: var(--color-label-violet-bg);
+  color: var(--color-label-violet-text);
+}
+
+.label-chip--magenta:has(input:checked) {
+  border-color: var(--color-label-magenta-border);
+  background: var(--color-label-magenta-bg);
+  color: var(--color-label-magenta-text);
+}
+
+.label-chip--indigo:has(input:checked) {
+  border-color: var(--color-label-indigo-border);
+  background: var(--color-label-indigo-bg);
+  color: var(--color-label-indigo-text);
+}
+
+.label-chip--olive:has(input:checked) {
+  border-color: var(--color-label-olive-border);
+  background: var(--color-label-olive-bg);
+  color: var(--color-label-olive-text);
+}
+
+.label-chip--sand:has(input:checked) {
+  border-color: var(--color-label-sand-border);
+  background: var(--color-label-sand-bg);
+  color: var(--color-label-sand-text);
+}
+
+.label-chip--plum:has(input:checked) {
+  border-color: var(--color-label-plum-border);
+  background: var(--color-label-plum-bg);
+  color: var(--color-label-plum-text);
+}
+
 .label-chip input {
   margin: 0;
   accent-color: var(--color-accent);
+}
+
+/* Labels management (workspace) — ruled ledger rows with color swatches. */
+.labels-panel {
+  margin-bottom: var(--space-4);
+}
+
+.label-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: var(--border-subtle);
+}
+
+.label-row:first-child {
+  border-top: none;
+}
+
+.label-swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-xs);
+  background: var(--color-border-strong);
+  flex-shrink: 0;
+}
+
+.label-swatch--violet {
+  background: var(--color-label-violet-text);
+}
+
+.label-swatch--magenta {
+  background: var(--color-label-magenta-text);
+}
+
+.label-swatch--indigo {
+  background: var(--color-label-indigo-text);
+}
+
+.label-swatch--olive {
+  background: var(--color-label-olive-text);
+}
+
+.label-swatch--sand {
+  background: var(--color-label-sand-text);
+}
+
+.label-swatch--plum {
+  background: var(--color-label-plum-text);
+}
+
+.label-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label-row-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Label color picker — radio swatches. */
+.color-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.color-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.25rem 0.625rem;
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.color-radio:has(input:checked) {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.color-radio input {
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.color-radio-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-xs);
+  background: var(--color-border-strong);
+  flex-shrink: 0;
+}
+
+.color-radio-swatch--violet {
+  background: var(--color-label-violet-text);
+}
+
+.color-radio-swatch--magenta {
+  background: var(--color-label-magenta-text);
+}
+
+.color-radio-swatch--indigo {
+  background: var(--color-label-indigo-text);
+}
+
+.color-radio-swatch--olive {
+  background: var(--color-label-olive-text);
+}
+
+.color-radio-swatch--sand {
+  background: var(--color-label-sand-text);
+}
+
+.color-radio-swatch--plum {
+  background: var(--color-label-plum-text);
 }
 
 .form-actions {
@@ -1884,6 +2132,7 @@
 @media (pointer: coarse) {
   .btn,
   .label-chip,
+  .color-radio,
   .card-main,
   .field input,
   .field select,
