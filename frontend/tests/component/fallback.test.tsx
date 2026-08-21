@@ -11,6 +11,7 @@ vi.mock("../../src/api/client.js", () => ({
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    getActivity: vi.fn().mockResolvedValue({ items: [] }),
   },
   ApiError: class extends Error {},
 }));

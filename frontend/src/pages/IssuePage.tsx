@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
-import type { Issue } from "@mini-issue-tracker/shared";
+import type { Issue, Activity } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
@@ -14,6 +14,7 @@ import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { IssueForm } from "../components/IssueForm.js";
 import { SkeletonRows } from "../components/Skeleton.js";
+import { ActivityPanel } from "../components/ActivityPanel.js";
 import { issueKey } from "../lib/issueKey.js";
 import { labelTone } from "../lib/labelTone.js";
 
@@ -31,6 +32,9 @@ export function IssuePage() {
   const navigate = useNavigate();
   const [issue, setIssue] = useState<Issue | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [activityItems, setActivityItems] = useState<Activity[]>([]);
+  const [activityTotal, setActivityTotal] = useState(0);
+  const [activityPage, setActivityPage] = useState(1);
   const [commentBody, setCommentBody] = useState("");
   const [status, setStatus] = useState<string>("");
   const [priority, setPriority] = useState<string>("");
@@ -55,8 +59,23 @@ export function IssuePage() {
     return api.get<{ items: Comment[] }>(`/issues/${issueId}/comments`).then((res) => setComments(res.items));
   }
 
+  function loadActivity() {
+    return api.getActivity(issueId!, { page: 1, pageSize: 50 })
+      .then((res) => {
+        setActivityItems(res.items);
+        setActivityTotal(res.total);
+        setActivityPage(res.page);
+      })
+      .catch((err) => {
+        console.error("Failed to load activity:", err);
+        setActivityItems([]);
+        setActivityTotal(0);
+        setActivityPage(1);
+      });
+  }
+
   useEffect(() => {
-    Promise.all([loadIssue(), loadComments()])
+    Promise.all([loadIssue(), loadComments(), loadActivity()])
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [issueId]);
@@ -228,6 +247,13 @@ export function IssuePage() {
                   ))}
                 </ul>
               )}
+              <hr className="issue-divider" />
+              <ActivityPanel
+                issueId={issueId!}
+                initialItems={activityItems}
+                initialTotal={activityTotal}
+                initialPage={activityPage}
+              />
               <div className="comment-composer">
                 <form className="inline-form" onSubmit={handleAddComment}>
                   <Field label="Comment" srOnlyLabel className="field-grow">

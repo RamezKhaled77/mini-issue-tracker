@@ -140,10 +140,36 @@ export const issueLabels = sqliteTable(
   })
 );
 
+export const activities = sqliteTable(
+  "activities",
+  {
+    id: text("id").primaryKey(),
+    issueId: text("issue_id")
+      .notNull()
+      .references(() => issues.id, { onDelete: "cascade" }),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    field: text("field"),
+    fromValue: text("from_value"),
+    toValue: text("to_value"),
+    labelIds: text("label_ids"),
+    labelNames: text("label_names"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => ({
+    issueIdx: index("activities_issue_idx").on(table.issueId),
+    actorIdx: index("activities_actor_idx").on(table.actorId),
+    createdIdx: index("activities_created_idx").on(table.createdAt),
+  })
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ownedWorkspaces: many(workspaces),
   memberships: many(memberships),
+  activities: many(activities),
 }));
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
@@ -173,6 +199,7 @@ export const issuesRelations = relations(issues, ({ one, many }) => ({
   assignee: one(users, { fields: [issues.assigneeId], references: [users.id] }),
   comments: many(comments),
   issueLabels: many(issueLabels),
+  activities: many(activities),
 }));
 
 export const commentsRelations = relations(comments, ({ one }) => ({
@@ -186,4 +213,9 @@ export const labelsRelations = relations(labels, ({ one, many }) => ({
     references: [workspaces.id],
   }),
   issueLabels: many(issueLabels),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  issue: one(issues, { fields: [activities.issueId], references: [issues.id] }),
+  actor: one(users, { fields: [activities.actorId], references: [users.id] }),
 }));

@@ -669,6 +669,36 @@ comment containers.
 
 ---
 
+## 25a. Activity History (Issue Audit Trail)
+
+The Activity panel shows an immutable, chronological audit trail of what changed
+on an issue. It follows the same ruled-row ledger language as comments.
+
+Each activity row contains:
+
+- **Event type indicator**: a 6px colored dot left of the content — petrol for
+  creation/updates, coral for deletions/removals.
+- **Event label**: concise mono uppercase label (`.activity-type`): `CREATED`,
+  `UPDATED`, `LABEL ADDED`, `LABEL REMOVED`, `DELETED`.
+- **Actor**: display name in semibold, mono timestamp faint to the right.
+- **Change detail** (for `UPDATED`):
+  - Field name in mono (`--text-mono`, `--color-text-muted`): `status`,
+    `priority`, `assignee`, `due_date`, `title`, `description`, `labels`.
+  - Old value (struck through, coral) → New value (petrol, semibold).
+  - Labels render as label-tone badges; removed labels show strikethrough.
+- **Timestamp**: relative time (`formatRelative`), faint mono.
+
+Rows are bordered top and between rows (hairline `--color-border`). The panel
+uses a top hairline to separate from Comments, and an eyebrow `ACTIVITY`
+(mono uppercase, faint). Empty state uses the compact EmptyState pattern:
+title "No activity yet" with explanation "Changes to this issue will appear
+here."
+
+Do not use cards for activity entries. The ruled row pattern matches the
+comment stream and ticket ledger — a continuous document surface.
+
+---
+
 ## 26. Comment Composer
 
 The composer is **connected to the comment stream**:
