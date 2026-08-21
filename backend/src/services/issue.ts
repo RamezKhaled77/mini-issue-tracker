@@ -2,17 +2,21 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { issueLabels, issues, labels, memberships, users } from "../db/schema.js";
 import { createIssueRecord } from "../domain/issue.js";
+import { createActivityRecord, truncateDescription } from "../domain/activity.js";
 import { resolveDisplayName } from "../lib/identity.js";
 import { buildLabelMap } from "../lib/labels.js";
 import { ApiError } from "../api/middleware/error-handler.js";
 import type { MembershipService } from "./membership.js";
 import type { ProjectService } from "./project.js";
+import type { ActivityService } from "./activity.js";
 import type { IssueQueryInput, UpdateIssueInput } from "../api/validators/issue.js";
+import type { ActivityField } from "@mini-issue-tracker/shared";
 
 export interface IssueServiceDeps {
   db: Db;
   membershipService: MembershipService;
   projectService: ProjectService;
+  activityService: ActivityService;
 }
 
 export interface IssueQuery extends IssueQueryInput {}
@@ -79,6 +83,7 @@ export function createIssueService(deps: IssueServiceDeps) {
     const workspaceId = requireProjectMember(userId, projectId);
     validateAssignee(workspaceId, input.assigneeId ?? null);
     validateLabels(workspaceId, input.labelIds ?? []);
+    
     const issue = createIssueRecord(projectId, {
       title: input.title,
       description: input.description,
@@ -87,17 +92,28 @@ export function createIssueService(deps: IssueServiceDeps) {
       assigneeId: input.assigneeId,
       dueDate: input.dueDate,
     });
-    deps.db.insert(issues).values(issue).run();
-    if (input.labelIds?.length) {
-      deps.db
-        .insert(issueLabels)
-        .values(input.labelIds.map((labelId) => ({ issueId: issue.id, labelId })))
-        .run();
-    }
-    return getIssue(issue.id, userId);
+    
+    return deps.db.transaction(() => {
+      deps.db.insert(issues).values(issue).run();
+      if (input.labelIds?.length) {
+        deps.db
+          .insert(issueLabels)
+          .values(input.labelIds.map((labelId) => ({ issueId: issue.id, labelId })))
+          .run();
+      }
+      // Record activity
+      deps.activityService.recordActivity(
+        createActivityRecord(issue.id, userId, "issue.created")
+      );
+      return getIssueWithLabels(issue.id, userId);
+    });
   }
 
   function getIssue(issueId: string, userId: string) {
+    return getIssueWithLabels(issueId, userId);
+  }
+
+  function getIssueWithLabels(issueId: string, userId: string) {
     const issue = deps.db
       .select({
         id: issues.id,
@@ -230,33 +246,125 @@ export function createIssueService(deps: IssueServiceDeps) {
   }
 
   function updateIssue(issueId: string, input: UpdateIssueInput, userId: string) {
-    const existing = getIssue(issueId, userId);
+    const existing = getIssueWithLabels(issueId, userId);
     const workspaceId = getProjectWorkspace(existing.projectId);
     if (input.assigneeId !== undefined) validateAssignee(workspaceId, input.assigneeId);
     if (input.labelIds !== undefined) validateLabels(workspaceId, input.labelIds);
 
-    const updates: Record<string, unknown> = {};
-    for (const key of ["title", "description", "status", "priority", "assigneeId", "dueDate"] as const) {
-      if (input[key] !== undefined) updates[key] = input[key];
-    }
-    updates.updatedAt = new Date();
-    deps.db.update(issues).set(updates).where(eq(issues.id, issueId)).run();
+    return deps.db.transaction(() => {
+      const updates: Record<string, unknown> = {};
+      for (const key of ["title", "description", "status", "priority", "assigneeId", "dueDate"] as const) {
+        if (input[key] !== undefined) updates[key] = input[key];
+      }
+      updates.updatedAt = new Date();
+      deps.db.update(issues).set(updates).where(eq(issues.id, issueId)).run();
 
-    if (input.labelIds !== undefined) {
-      deps.db.delete(issueLabels).where(eq(issueLabels.issueId, issueId)).run();
-      if (input.labelIds.length) {
-        deps.db
-          .insert(issueLabels)
-          .values(input.labelIds.map((labelId) => ({ issueId, labelId })))
-          .run();
+      if (input.labelIds !== undefined) {
+        deps.db.delete(issueLabels).where(eq(issueLabels.issueId, issueId)).run();
+        if (input.labelIds.length) {
+          deps.db
+            .insert(issueLabels)
+            .values(input.labelIds.map((labelId) => ({ issueId, labelId })))
+            .run();
+        }
+      }
+
+      // Record activities after update
+      const after = getIssueWithLabels(issueId, userId);
+      recordChanges(existing, after, userId);
+
+      return after;
+    });
+  }
+
+  function recordChanges(before: ReturnType<typeof getIssueWithLabels>, after: ReturnType<typeof getIssueWithLabels>, actorId: string) {
+    const issueId = before.id;
+    const changes: Array<{ field: ActivityField; from: string | null; to: string | null }> = [];
+
+    // Compare scalar fields
+    const fieldMap: Array<[ActivityField, "status" | "priority" | "assigneeId" | "dueDate" | "title" | "description"]> = [
+      ["status", "status"],
+      ["priority", "priority"],
+      ["assignee", "assigneeId"],
+      ["due_date", "dueDate"],
+      ["title", "title"],
+      ["description", "description"],
+    ];
+
+    for (const [field, key] of fieldMap) {
+      const beforeVal = before[key];
+      const afterVal = after[key];
+      if (beforeVal !== afterVal) {
+        let from: string | null = null;
+        let to: string | null = null;
+        
+        if (field === "description") {
+          from = truncateDescription(beforeVal as string | null);
+          to = truncateDescription(afterVal as string | null);
+        } else if (field === "assignee") {
+          from = beforeVal ?? null;
+          to = afterVal ?? null;
+        } else {
+          from = beforeVal ?? null;
+          to = afterVal ?? null;
+        }
+        
+        changes.push({ field, from, to });
       }
     }
-    return getIssue(issueId, userId);
+
+    for (const change of changes) {
+      deps.activityService.recordActivity(
+        createActivityRecord(issueId, actorId, "issue.updated", {
+          field: change.field,
+          fromValue: change.from,
+          toValue: change.to,
+        })
+      );
+    }
+
+    // Handle labels
+    if (before.labelIds.length !== after.labelIds.length || 
+        !before.labelIds.every((id, i) => id === after.labelIds[i])) {
+      const beforeLabelIds = new Set(before.labelIds);
+      const afterLabelIds = new Set(after.labelIds);
+      
+      const added = after.labelIds.filter((id) => !beforeLabelIds.has(id));
+      const removed = before.labelIds.filter((id) => !afterLabelIds.has(id));
+      
+      if (added.length) {
+        const labelMap = buildLabelMap(deps.db, added);
+        const labelNames = added.map((id) => labelMap.get(id)?.name).filter(Boolean) as string[];
+        deps.activityService.recordActivity(
+          createActivityRecord(issueId, actorId, "issue.labels_added", {
+            labelIds: added,
+            labelNames,
+          })
+        );
+      }
+      
+      if (removed.length) {
+        const labelMap = buildLabelMap(deps.db, removed);
+        const labelNames = removed.map((id) => labelMap.get(id)?.name).filter(Boolean) as string[];
+        deps.activityService.recordActivity(
+          createActivityRecord(issueId, actorId, "issue.labels_removed", {
+            labelIds: removed,
+            labelNames,
+          })
+        );
+      }
+    }
   }
 
   function deleteIssue(issueId: string, userId: string) {
-    getIssue(issueId, userId);
-    deps.db.delete(issues).where(eq(issues.id, issueId)).run();
+    const issue = getIssueWithLabels(issueId, userId);
+    
+    return deps.db.transaction(() => {
+      deps.activityService.recordActivity(
+        createActivityRecord(issue.id, userId, "issue.deleted")
+      );
+      deps.db.delete(issues).where(eq(issues.id, issueId)).run();
+    });
   }
 
   return {

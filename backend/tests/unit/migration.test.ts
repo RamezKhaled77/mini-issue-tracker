@@ -38,7 +38,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(3);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(4);
 
     const user = sqlite
       .prepare(`SELECT id, email, name FROM users WHERE id = ?`)
@@ -112,7 +112,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
       runMigrations(sqlite);
 
-      expect(sqlite.pragma("user_version", { simple: true })).toBe(3);
+      expect(sqlite.pragma("user_version", { simple: true })).toBe(4);
 
       const label = sqlite
         .prepare(`SELECT id, workspace_id, name, color FROM labels WHERE id = ?`)

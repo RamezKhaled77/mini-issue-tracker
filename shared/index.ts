@@ -76,6 +76,42 @@ export interface Comment {
   createdAt: string;
 }
 
+export type ActivityType =
+  | "issue.created"
+  | "issue.updated"
+  | "issue.labels_added"
+  | "issue.labels_removed"
+  | "issue.deleted";
+
+export type ActivityField =
+  | "status"
+  | "priority"
+  | "assignee"
+  | "due_date"
+  | "title"
+  | "description";
+
+export interface Activity {
+  id: string;
+  issueId: string;
+  actorId: string;
+  actorName: string;
+  type: ActivityType;
+  field?: ActivityField;
+  fromValue?: string | null;
+  toValue?: string | null;
+  labelIds?: string[] | null;
+  labelNames?: string[] | null;
+  createdAt: string;
+}
+
+export interface ActivityListResponse {
+  items: Activity[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 export interface Label {
   id: string;
   workspaceId: string;

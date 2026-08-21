@@ -1,3 +1,5 @@
+import type { ActivityListResponse } from "@mini-issue-tracker/shared";
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -27,6 +29,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+function buildUrl(path: string, params?: Record<string, unknown>): string {
+  if (!params) return path;
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) {
+      searchParams.set(key, String(value));
+    }
+  }
+  const query = searchParams.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, data?: unknown) =>
@@ -34,4 +48,6 @@ export const api = {
   patch: <T>(path: string, data: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(data) }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  getActivity: (issueId: string, params?: { page?: number; pageSize?: number }) =>
+    request<ActivityListResponse>(buildUrl(`/issues/${issueId}/activity`, params as Record<string, unknown> | undefined)),
 };
