@@ -1,4 +1,4 @@
-import type { ActivityListResponse } from "@mini-issue-tracker/shared";
+import type { ActivityListResponse, BulkIssueRequest, BulkIssueResponse } from "@mini-issue-tracker/shared";
 
 export class ApiError extends Error {
   status: number;
@@ -50,4 +50,6 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   getActivity: (issueId: string, params?: { page?: number; pageSize?: number }) =>
     request<ActivityListResponse>(buildUrl(`/issues/${issueId}/activity`, params as Record<string, unknown> | undefined)),
+  bulkUpdate: (body: BulkIssueRequest) =>
+    request<BulkIssueResponse>("/issues/bulk", { method: "POST", body: JSON.stringify(body) }),
 };

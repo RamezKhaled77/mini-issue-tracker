@@ -207,3 +207,28 @@ export interface IssueQueryParams {
   page?: number;
   pageSize?: number;
 }
+
+/* Bulk actions (Spec 007). */
+export const BULK_ISSUE_LIMIT = 20;
+
+export type BulkIssueAction =
+  | "setStatus"
+  | "setPriority"
+  | "assign"
+  | "addLabels"
+  | "removeLabels"
+  | "delete";
+
+export interface BulkIssueRequest {
+  action: BulkIssueAction;
+  issueIds: string[];
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  assigneeId?: string | null;
+  labelIds?: string[];
+}
+
+export interface BulkIssueResponse {
+  issueIds: string[];
+  count: number;
+}

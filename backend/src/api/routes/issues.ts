@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Db } from "../../db/client.js";
 import { ApiError } from "../middleware/error-handler.js";
 import { createIssueSchema, issueQuerySchema, updateIssueSchema } from "../validators/issue.js";
+import { bulkIssueSchema } from "../validators/bulk.js";
 import type { MembershipService } from "../../services/membership.js";
 import type { IssueService } from "../../services/issue.js";
 
@@ -58,6 +59,15 @@ export function issueRoutes(deps: IssueRouteDeps): Router {
       throw new ApiError(422, "VALIDATION", "Invalid issue input", validationFields(parsed.error));
     }
     res.status(200).json({ issue: issueService.updateIssue(req.params.id, parsed.data, userId) });
+  });
+
+  router.post("/issues/bulk", (req, res) => {
+    const userId = requireAuth(req);
+    const parsed = bulkIssueSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(422, "VALIDATION", "Invalid bulk issue input", validationFields(parsed.error));
+    }
+    res.status(200).json(issueService.bulkUpdate(parsed.data, userId));
   });
 
   router.delete("/issues/:id", (req, res) => {

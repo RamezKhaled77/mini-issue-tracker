@@ -566,4 +566,40 @@ describe("accessibility", () => {
     expect(document.activeElement).toBe(link);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it("workspace ledger with an active bulk selection has no axe violations", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve({ total: 2, byStatus: { Open: 2, "In Progress": 0, Closed: 0 }, byPriority: { Low: 0, Medium: 2, High: 0, Urgent: 0 } });
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend", createdAt: "", updatedAt: "" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({
+          items: [
+            { id: "iss-1", projectId: "proj-1", title: "Fix login", description: null, status: "Open", priority: "High", assigneeId: null, assignee: null, dueDate: null, labelIds: [], labels: [] },
+            { id: "iss-2", projectId: "proj-1", title: "Ship nav", description: null, status: "Open", priority: "Medium", assigneeId: null, assignee: null, dueDate: null, labelIds: [], labels: [] },
+          ],
+        });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    const { container } = render(
+      <MemoryRouter initialEntries={["/workspaces/ws-1"]}>
+        <Routes>
+          <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+    expect(await screen.findByRole("group", { name: "Bulk actions" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("1 selected");
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });

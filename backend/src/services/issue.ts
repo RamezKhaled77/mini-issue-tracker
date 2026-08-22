@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { issueLabels, issues, labels, memberships, users } from "../db/schema.js";
+import { issueLabels, issues, labels, memberships, projects, users } from "../db/schema.js";
 import { createIssueRecord } from "../domain/issue.js";
 import { createActivityRecord, truncateDescription } from "../domain/activity.js";
 import { resolveDisplayName } from "../lib/identity.js";
@@ -10,7 +10,8 @@ import type { MembershipService } from "./membership.js";
 import type { ProjectService } from "./project.js";
 import type { ActivityService } from "./activity.js";
 import type { IssueQueryInput, UpdateIssueInput } from "../api/validators/issue.js";
-import type { ActivityField } from "@mini-issue-tracker/shared";
+import type { BulkIssueInput } from "../api/validators/bulk.js";
+import type { ActivityField, BulkIssueResponse } from "@mini-issue-tracker/shared";
 
 export interface IssueServiceDeps {
   db: Db;
@@ -367,12 +368,89 @@ export function createIssueService(deps: IssueServiceDeps) {
     });
   }
 
+  // Bulk Actions (Spec 007). All issues must share one workspace; the whole
+  // operation is all-or-nothing in a single transaction. Reuses the same
+  // per-issue mutation + activity path as updateIssue.
+  function bulkUpdate(input: BulkIssueInput, userId: string): BulkIssueResponse {
+    const { issueIds, action } = input;
+
+    // Resolve every issue's workspace in one batched query.
+    const rows = deps.db
+      .select({ id: issues.id, workspaceId: projects.workspaceId })
+      .from(issues)
+      .innerJoin(projects, eq(issues.projectId, projects.id))
+      .where(inArray(issues.id, issueIds))
+      .all();
+    const foundIds = new Set(rows.map((r) => r.id));
+    const missing = issueIds.filter((id) => !foundIds.has(id));
+    if (missing.length) {
+      throw new ApiError(404, "NOT_FOUND", "Issues not found");
+    }
+    const workspaceIds = new Set(rows.map((r) => r.workspaceId));
+    if (workspaceIds.size > 1) {
+      throw new ApiError(422, "VALIDATION", "All issues must belong to the same workspace");
+    }
+    const workspaceId = rows[0].workspaceId;
+
+    // Validate the single action value against the workspace once.
+    if (action === "assign") validateAssignee(workspaceId, input.assigneeId);
+    if (action === "addLabels" || action === "removeLabels") validateLabels(workspaceId, input.labelIds);
+
+    deps.membershipService.requireMember(userId, workspaceId);
+
+    return deps.db.transaction(() => {
+      for (const issueId of issueIds) {
+        // Member check + 404 for every issue, including deletions.
+        const existing = getIssueWithLabels(issueId, userId);
+
+        if (action === "delete") {
+          deps.activityService.recordActivity(
+            createActivityRecord(issueId, userId, "issue.deleted")
+          );
+          deps.db.delete(issues).where(eq(issues.id, issueId)).run();
+          continue;
+        }
+
+        const updates: Record<string, unknown> = {};
+        if (action === "setStatus") updates.status = input.status;
+        else if (action === "setPriority") updates.priority = input.priority;
+        else if (action === "assign") updates.assigneeId = input.assigneeId ?? null;
+        if (Object.keys(updates).length > 0) {
+          updates.updatedAt = new Date();
+          deps.db.update(issues).set(updates).where(eq(issues.id, issueId)).run();
+        }
+
+        let nextLabelIds: string[] | null = null;
+        if (action === "addLabels") {
+          nextLabelIds = [...new Set([...existing.labelIds, ...input.labelIds])];
+        } else if (action === "removeLabels") {
+          const remove = new Set(input.labelIds);
+          nextLabelIds = existing.labelIds.filter((id) => !remove.has(id));
+        }
+        if (nextLabelIds !== null) {
+          deps.db.delete(issueLabels).where(eq(issueLabels.issueId, issueId)).run();
+          if (nextLabelIds.length) {
+            deps.db
+              .insert(issueLabels)
+              .values(nextLabelIds.map((labelId) => ({ issueId, labelId })))
+              .run();
+          }
+        }
+
+        const after = getIssueWithLabels(issueId, userId);
+        recordChanges(existing, after, userId);
+      }
+      return { issueIds, count: issueIds.length };
+    });
+  }
+
   return {
     createIssue,
     getIssue,
     listIssues,
     updateIssue,
     deleteIssue,
+    bulkUpdate,
   };
 }
 

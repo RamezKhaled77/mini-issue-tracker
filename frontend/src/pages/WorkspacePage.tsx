@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
-import type { Issue, Label, Project } from "@mini-issue-tracker/shared";
+import type { Issue, Label, Project, BulkIssueRequest } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { IssueForm } from "../components/IssueForm.js";
 import { Invitations } from "../components/Invitations.js";
@@ -16,9 +16,12 @@ import { Dialog } from "../components/Dialog.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { SkeletonRows } from "../components/Skeleton.js";
+import { BulkToolbar } from "../components/BulkToolbar.js";
+import type { BulkMember } from "../components/BulkToolbar.js";
 import { issueKey } from "../lib/issueKey.js";
 import { isOverdue } from "../lib/isOverdue.js";
 import { labelTone } from "../lib/labelTone.js";
+import { toggle, selectVisible } from "../lib/bulkSelection.js";
 
 interface WorkspaceDetail {
   id: string;
@@ -48,6 +51,13 @@ export function WorkspacePage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Bulk selection state (Spec 007).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [members, setMembers] = useState<BulkMember[]>([]);
+  const [applying, setApplying] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   async function loadProjects(): Promise<Project[]> {
     const res = await api.get<{ items: Project[] }>(`/workspaces/${workspaceId}/projects`);
@@ -106,6 +116,10 @@ export function WorkspacePage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
     loadLabels().catch((err) => setError(err.message));
+        api
+      .get<{ items: BulkMember[] }>(`/workspaces/${workspaceId}/members`)
+      .then((res) => setMembers(res.items ?? []))
+      .catch(() => setMembers([]));
   }, [workspaceId]);
 
   useEffect(() => {
@@ -113,6 +127,35 @@ export function WorkspacePage() {
   }, [selectedProject, search, statusFilter, priorityFilter, labelFilter]);
 
   const filtering = Boolean(search || statusFilter || priorityFilter || labelFilter);
+
+  const visibleIds = issues.map((i) => i.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  const someVisibleSelected = visibleIds.some((id) => selected.has(id));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected && !allVisibleSelected;
+    }
+  }, [visibleIds, selected, someVisibleSelected, allVisibleSelected]);
+
+  function handleSelectAll() {
+    setSelected((prev) => selectVisible(prev, visibleIds));
+  }
+
+  async function handleBulkApply(request: BulkIssueRequest) {
+    setApplying(true);
+    setBulkError(null);
+    try {
+      await api.bulkUpdate(request);
+      await loadIssues();
+      await loadStats();
+      setSelected(new Set());
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : "Bulk action failed");
+    } finally {
+      setApplying(false);
+    }
+  }
 
   return (
     <section>
@@ -278,56 +321,96 @@ export function WorkspacePage() {
               description={filtering ? "No issues match your filters." : "Create your first issue in this project."}
             />
           ) : (
-            <ul className="ledger-list">
-              {issues.map((issue) => (
-                <li key={issue.id}>
-                  <Link
-                    to={`/workspaces/${workspaceId}/issues/${issue.id}`}
-                    className="ledger-row"
-                    data-priority={issue.priority.toLowerCase()}
-                    data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
-                  >
-                    <span className="ticket-key">{issueKey(issue.id)}</span>
-                    <span className="ledger-main">
-                      <span className="ledger-title">{issue.title}</span>
-                      {issue.description && (
-                        <span className="ledger-subtitle">{issue.description}</span>
-                      )}
+            <>
+              <div className="bulk-selection-bar">
+                <label className="bulk-select-all">
+                  <input
+                    type="checkbox"
+                    ref={selectAllRef}
+                    checked={allVisibleSelected}
+                    onChange={handleSelectAll}
+                  />
+                  Select all visible
+                </label>
+              </div>
+
+              {bulkError && (
+                <Alert role="alert" className="page-alert">
+                  {bulkError}
+                </Alert>
+              )}
+
+              {selected.size > 0 && (
+                <BulkToolbar
+                  selectedIds={[...selected]}
+                  selectedCount={selected.size}
+                  members={members}
+                  labels={labels}
+                  applying={applying}
+                  onApply={handleBulkApply}
+                  onClear={() => setSelected(new Set())}
+                />
+              )}
+
+              <ul className="ledger-list">
+                {issues.map((issue) => (
+                  <li key={issue.id} className="ledger-item">
+                    <span className="ledger-select">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(issue.id)}
+                        onChange={() => setSelected((prev) => toggle(prev, issue.id))}
+                        aria-label={`Select ${issue.title}`}
+                      />
                     </span>
-                    <span className="ledger-meta">
-                      {isOverdue(issue.dueDate, issue.status) && (
-                        <Badge tone="danger">Overdue</Badge>
-                      )}
-                      <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
-                        {issue.status}
-                      </Badge>
-                      <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
-                        {issue.priority}
-                      </Badge>
-                      {(issue.labels ?? []).slice(0, 2).map((label) => (
-                        <Badge key={label.id} tone={labelTone(label.color)}>
-                          {label.name}
+                    <Link
+                      to={`/workspaces/${workspaceId}/issues/${issue.id}`}
+                      className={`ledger-row${selected.has(issue.id) ? " ledger-row--selected" : ""}`}
+                      data-priority={issue.priority.toLowerCase()}
+                      data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
+                    >
+                      <span className="ticket-key">{issueKey(issue.id)}</span>
+                      <span className="ledger-main">
+                        <span className="ledger-title">{issue.title}</span>
+                        {issue.description && (
+                          <span className="ledger-subtitle">{issue.description}</span>
+                        )}
+                      </span>
+                      <span className="ledger-meta">
+                        {isOverdue(issue.dueDate, issue.status) && (
+                          <Badge tone="danger">Overdue</Badge>
+                        )}
+                        <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
+                          {issue.status}
                         </Badge>
-                      ))}
-                      {(issue.labels ?? []).length > 2 && (
-                        <span className="ledger-more-labels">
-                          +{issue.labels.length - 2} more
-                        </span>
-                      )}
-                      {issue.assignee && (
-                        <span className="card-assignee">
-                          <Avatar name={issue.assignee.name} decorative small />
-                          {issue.assignee.name}
-                        </span>
-                      )}
-                    </span>
-                    <span className="ledger-chevron" aria-hidden="true">
-                      &rarr;
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                        <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
+                          {issue.priority}
+                        </Badge>
+                        {(issue.labels ?? []).slice(0, 2).map((label) => (
+                          <Badge key={label.id} tone={labelTone(label.color)}>
+                            {label.name}
+                          </Badge>
+                        ))}
+                        {(issue.labels ?? []).length > 2 && (
+                          <span className="ledger-more-labels">
+                            +{issue.labels.length - 2} more
+                          </span>
+                        )}
+                        {issue.assignee && (
+                          <span className="card-assignee">
+                            <Avatar name={issue.assignee.name} decorative small />
+                            {issue.assignee.name}
+                          </span>
+                        )}
+                      </span>
+                      <span className="ledger-chevron" aria-hidden="true">
+                        &rarr;
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
       </div>

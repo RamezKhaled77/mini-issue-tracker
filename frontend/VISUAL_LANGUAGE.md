@@ -559,6 +559,72 @@ never decorative, and never replaces status/priority colors.
 
 ---
 
+## 19a. Bulk Selection & Actions (ledger interaction layer)
+
+Bulk Actions are an **interaction layer over the ticket ledger**, not a new
+surface. The ledger signature (priority edge bar, ticket key, title, metadata,
+assignee, chevron) is untouched; selection adds a quiet leading column.
+
+### Anatomy
+
+1. **Selection column** — each ledger row (`<li class="ledger-item">`) leads
+   with a compact native checkbox slot (`.ledger-select`) before the row link.
+   The checkbox uses `accent-color: var(--color-accent)` and carries an
+   accessible name (`Select <issue title>`). It never navigates.
+2. **Select-all bar** — a ruled strip above the ledger
+   (`.bulk-selection-bar`: hairlines top/bottom, mono uppercase label) holding
+   a single **"Select all visible"** checkbox (`.bulk-select-all`). It reflects
+   only the currently visible (post-filter) issues and supports an
+   **indeterminate** state when the selection covers part of the visible set.
+3. **Selected row** — the row link gains `.ledger-row--selected`:
+   `--color-accent-subtle` background with an inset 1px
+   `--color-accent-border` ring. The priority edge bar and all row anatomy stay
+   intact. **Coral is never used for selection** (petrol = interactive
+   emphasis; coral stays destructive/attention).
+4. **Bulk toolbar** — appears only while ≥1 issue is selected. A ruled bar
+   (`.bulk-toolbar`) in the same family as the filter bar: hairlines top and
+   bottom, paper surface, compact padding. Contents, left to right:
+   - a quiet mono/tabular selected count (`.bulk-count`,
+     `role="status"` — announced politely);
+   - a labelled native **Action** select (Set status / Set priority / Assign to /
+     Add label / Remove label);
+   - one action-specific value control (status or priority select, assignee
+     select with an explicit **Unassigned** option, or the existing
+     `.label-chip` checkbox picker for labels);
+   - trailing **Clear** (ghost) + **Apply** (primary petrol) buttons.
+   On My Issues, when the selection spans more than one workspace the toolbar's
+   controls are replaced by a quiet note ("Bulk actions need issues from a
+   single workspace.") and Apply is disabled — cross-workspace bulk is not a
+   product capability.
+5. **Destructive action (bulk delete)** — choosing **Delete** turns the toolbar
+   trigger coral (`btn--danger`, labelled "Delete…") with a quiet coral note
+   ("Deleting cannot be undone.", `.bulk-note--danger`). Confirming opens the
+   standard **Dialog** ("Delete N issues?" + explanation) whose confirm button
+   is coral and which always offers **Cancel**. This is the only place coral
+   appears in the bulk layer; selection itself stays petrol.
+
+### Where to reuse
+
+Any future ledger of issues (search results, saved views) should mount the same
+selection column + toolbar rather than inventing a new selection UI.
+
+### When NOT to use
+
+Do not add bulk controls to non-ledger lists (projects rail, workspace
+selector, activity rows). Do not use the toolbar as a general page-level action
+bar; it exists only for a live multi-row selection.
+
+### Responsive & motion
+
+- Coarse pointers: `.bulk-select-all`, `.ledger-select`, toolbar selects and
+  buttons sit in the existing 44px touch-target rule.
+- ≤375px: `.bulk-toolbar` stacks to a column (like `.filter-bar`) with
+  full-width fields and right-aligned actions; no horizontal overflow.
+- Appearance/disappearance is instant; no entrance animation beyond the
+  standard color transitions (reduced-motion safe).
+
+---
+
 ## 20. Issue Row Hierarchy
 
 Intended hierarchy: **ticket key → issue title → metadata**.

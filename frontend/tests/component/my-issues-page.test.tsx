@@ -11,6 +11,7 @@ vi.mock("../../src/api/client.js", () => ({
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    bulkUpdate: vi.fn(),
   },
   ApiError: class extends Error {},
 }));
@@ -338,5 +339,90 @@ describe("MyIssuesPage search, filter, and sort", () => {
     renderPage();
     await screen.findByRole("alert");
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
+  });
+});
+
+describe("MyIssuesPage bulk actions", () => {
+  it("toggles a selection and shows the toolbar with the workspace name", async () => {
+    vi.mocked(api.get).mockResolvedValue(makeResponse([makeIssue({ id: "iss-1" })]));
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+  });
+
+  it("disables the toolbar when the selection spans multiple workspaces", async () => {
+    vi.mocked(api.get).mockResolvedValue(
+      makeResponse([
+        makeIssue({ id: "iss-1", title: "Alpha issue", workspaceId: "ws-1", workspaceName: "Alpha" }),
+        makeIssue({ id: "iss-2", title: "Beta issue", workspaceId: "ws-2", workspaceName: "Beta", projectName: "Backend" }),
+      ])
+    );
+    renderPage();
+
+    await screen.findByText("Alpha issue");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Alpha issue" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Beta issue" }));
+
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+    expect(
+      screen.getByText("Bulk actions need issues from a single workspace.")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Action" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+
+    // Deselecting one restores a single-workspace selection.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Beta issue" }));
+    expect(
+      screen.queryByText("Bulk actions need issues from a single workspace.")
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+  });
+
+  it("applies within one workspace, reloads, and clears the selection", async () => {
+    vi.mocked(api.get).mockResolvedValue(makeResponse([makeIssue({ id: "iss-1" })]));
+    vi.mocked(api.bulkUpdate).mockResolvedValueOnce({ issueIds: ["iss-1"], count: 1 });
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all visible" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Action" }), {
+      target: { value: "setPriority" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "Priority" }), {
+      target: { value: "Urgent" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(api.bulkUpdate).toHaveBeenCalledTimes(1);
+    });
+    expect(api.bulkUpdate).toHaveBeenCalledWith({
+      issueIds: ["iss-1"],
+      action: "setPriority",
+      priority: "Urgent",
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("1 selected")).not.toBeInTheDocument();
+    });
+  });
+
+  it("surfaces a bulk error in an alert and keeps the selection", async () => {
+    vi.mocked(api.get).mockResolvedValue(makeResponse([makeIssue({ id: "iss-1" })]));
+    vi.mocked(api.bulkUpdate).mockRejectedValueOnce(new Error("Bulk failed"));
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    const alerts = await screen.findAllByRole("alert");
+    expect(alerts.some((a) => a.textContent?.includes("Bulk failed"))).toBe(true);
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
   });
 });

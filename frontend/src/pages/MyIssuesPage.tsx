@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
-import type { MyIssuesResponse } from "@mini-issue-tracker/shared";
+import type { BulkIssueRequest, Label, MyIssuesResponse } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
@@ -11,11 +11,14 @@ import { Button } from "../components/Button.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { SkeletonRows } from "../components/Skeleton.js";
+import { BulkToolbar } from "../components/BulkToolbar.js";
+import type { BulkMember } from "../components/BulkToolbar.js";
 import { issueKey } from "../lib/issueKey.js";
 import { isOverdue } from "../lib/isOverdue.js";
 import { labelTone } from "../lib/labelTone.js";
 import { applyMyIssuesView } from "../lib/myIssuesView.js";
 import type { MyIssuesSortKey } from "../lib/myIssuesView.js";
+import { toggle, selectVisible, partitionByWorkspace } from "../lib/bulkSelection.js";
 
 export function MyIssuesPage() {
   const [data, setData] = useState<MyIssuesResponse | null>(null);
@@ -28,11 +31,90 @@ export function MyIssuesPage() {
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // Bulk selection state (Spec 007). Cross-workspace selections are disabled.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [members, setMembers] = useState<BulkMember[]>([]);
+  const [wsLabels, setWsLabels] = useState<Label[]>([]);
+  const [applying, setApplying] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
   const visibleItems = useMemo(
     () => applyMyIssuesView(data?.items ?? [], { search, status: statusFilter, priority: priorityFilter, sort }),
     [data, search, statusFilter, priorityFilter, sort]
   );
   const filtering = Boolean(search || statusFilter || priorityFilter || sort !== "default");
+
+  // Bulk: group the selection by workspace over ALL fetched items (selected
+  // issues hidden by filters still belong to the operation).
+  const allItems = data?.items ?? [];
+  const workspaceGroups = useMemo(
+    () => partitionByWorkspace(selected, allItems),
+    [selected, allItems]
+  );
+  const workspaceIds = [...workspaceGroups.keys()];
+  const mixedSelection = workspaceIds.length > 1;
+  const singleWorkspaceId = workspaceIds.length === 1 ? workspaceIds[0] : null;
+  const singleWorkspaceName =
+    singleWorkspaceId !== null
+      ? (allItems.find((i) => i.workspaceId === singleWorkspaceId)?.workspaceName ?? null)
+      : null;
+
+  useEffect(() => {
+    if (singleWorkspaceId === null) {
+      setMembers([]);
+      setWsLabels([]);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<{ items: BulkMember[] }>(`/workspaces/${singleWorkspaceId}/members`)
+      .then((res) => {
+        if (!cancelled) setMembers(res.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMembers([]);
+      });
+    api
+      .get<{ items: Label[] }>(`/workspaces/${singleWorkspaceId}/labels`)
+      .then((res) => {
+        if (!cancelled) setWsLabels(res.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setWsLabels([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [singleWorkspaceId]);
+
+  const visibleIds = visibleItems.map((i) => i.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  const someVisibleSelected = visibleIds.some((id) => selected.has(id));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected && !allVisibleSelected;
+    }
+  }, [visibleIds, selected, someVisibleSelected, allVisibleSelected]);
+
+  function handleSelectAll() {
+    setSelected((prev) => selectVisible(prev, visibleIds));
+  }
+
+  async function handleBulkApply(request: BulkIssueRequest) {
+    setApplying(true);
+    setBulkError(null);
+    try {
+      await api.bulkUpdate(request);
+      setReloadKey((k) => k + 1);
+      setSelected(new Set());
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : "Bulk action failed");
+    } finally {
+      setApplying(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -196,15 +278,60 @@ export function MyIssuesPage() {
           description="No issues match your search or filters."
         />
       ) : data ? (
-        <ul className="ledger-list">
-          {visibleItems.map((issue) => (
-            <li key={issue.id}>
-              <Link
-                to={`/workspaces/${issue.workspaceId}/issues/${issue.id}`}
-                className="ledger-row"
-                data-priority={issue.priority.toLowerCase()}
-                data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
-              >
+        <>
+          <div className="bulk-selection-bar">
+            <label className="bulk-select-all">
+              <input
+                type="checkbox"
+                ref={selectAllRef}
+                checked={allVisibleSelected}
+                onChange={handleSelectAll}
+              />
+              Select all visible
+            </label>
+          </div>
+
+          {bulkError && (
+            <Alert role="alert" className="page-alert">
+              {bulkError}
+            </Alert>
+          )}
+
+          {selected.size > 0 && (
+            <BulkToolbar
+              selectedIds={[...selected]}
+              selectedCount={selected.size}
+              members={members}
+              labels={wsLabels}
+              disabled={mixedSelection}
+              disabledNote={
+                mixedSelection
+                  ? "Bulk actions need issues from a single workspace."
+                  : singleWorkspaceName
+              }
+              applying={applying}
+              onApply={handleBulkApply}
+              onClear={() => setSelected(new Set())}
+            />
+          )}
+
+          <ul className="ledger-list">
+            {visibleItems.map((issue) => (
+              <li key={issue.id} className="ledger-item">
+                <span className="ledger-select">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(issue.id)}
+                    onChange={() => setSelected((prev) => toggle(prev, issue.id))}
+                    aria-label={`Select ${issue.title}`}
+                  />
+                </span>
+                <Link
+                  to={`/workspaces/${issue.workspaceId}/issues/${issue.id}`}
+                  className={`ledger-row${selected.has(issue.id) ? " ledger-row--selected" : ""}`}
+                  data-priority={issue.priority.toLowerCase()}
+                  data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
+                >
                 <span className="ticket-key">{issueKey(issue.id)}</span>
                 <span className="ledger-main">
                   <span className="ledger-title">{issue.title}</span>
@@ -248,7 +375,8 @@ export function MyIssuesPage() {
               </Link>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       ) : null}
     </section>
   );

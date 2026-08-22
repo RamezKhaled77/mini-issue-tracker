@@ -9,6 +9,7 @@ vi.mock("../../src/api/client.js", () => ({
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    bulkUpdate: vi.fn(),
   },
   ApiError: class extends Error {},
 }));
@@ -254,5 +255,131 @@ describe("WorkspacePage overdue ledger rows", () => {
     const closedLateRow = screen.getByText("Closed late").closest(".ledger-row") as HTMLElement;
     expect(within(closedLateRow).queryByText("Overdue")).not.toBeInTheDocument();
     expect(closedLateRow).not.toHaveAttribute("data-overdue");
+  });
+});
+
+describe("WorkspacePage bulk actions", () => {
+  function mockTwoIssues() {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve(dashboardStats(2));
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend", createdAt: "", updatedAt: "" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({
+          items: [
+            { id: "iss-1", projectId: "proj-1", title: "Fix login", description: null, status: "Open", priority: "High", assigneeId: null, assignee: null, dueDate: null, labelIds: [] },
+            { id: "iss-2", projectId: "proj-1", title: "Ship nav", description: null, status: "Open", priority: "Medium", assigneeId: null, assignee: null, dueDate: null, labelIds: [] },
+          ],
+        });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({ items: [] });
+      }
+      if (path === "/workspaces/ws-1/members") {
+        return Promise.resolve({ items: [] });
+      }
+      return Promise.resolve({ items: [] });
+    });
+  }
+
+  it("toggles a row checkbox without navigating and shows the toolbar", async () => {
+    mockTwoIssues();
+    renderPage();
+
+    await screen.findByText("Fix login");
+    expect(screen.queryByText("1 selected")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Action" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Bulk actions" })).toBeInTheDocument();
+
+    // Toggle off — toolbar disappears.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+    expect(screen.queryByText("1 selected")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Action" })).not.toBeInTheDocument();
+  });
+
+  it("select all visible selects every currently visible issue", async () => {
+    mockTwoIssues();
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all visible" }));
+
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Select Fix login" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Select Ship nav" })).toBeChecked();
+
+    // Toggling again clears the visible selection.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all visible" }));
+    expect(screen.queryByText("2 selected")).not.toBeInTheDocument();
+  });
+
+  it("applies one bulk request and clears the selection", async () => {
+    mockTwoIssues();
+    vi.mocked(api.bulkUpdate).mockResolvedValueOnce({ issueIds: ["iss-1"], count: 1 });
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(api.bulkUpdate).toHaveBeenCalledTimes(1);
+    });
+    expect(api.bulkUpdate).toHaveBeenCalledWith({
+      issueIds: ["iss-1"],
+      action: "setStatus",
+      status: "Open",
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("1 selected")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByRole("combobox", { name: "Action" })).not.toBeInTheDocument();
+  });
+
+  it("surfaces a bulk error in an alert and keeps the selection", async () => {
+    mockTwoIssues();
+    vi.mocked(api.bulkUpdate).mockRejectedValueOnce(new Error("Bulk failed"));
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Bulk failed");
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+  });
+
+  it("bulk delete goes through the confirmation dialog and clears the selection", async () => {
+    mockTwoIssues();
+    vi.mocked(api.bulkUpdate).mockResolvedValueOnce({ issueIds: ["iss-1", "iss-2"], count: 2 });
+    renderPage();
+
+    await screen.findByText("Fix login");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all visible" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Action" }), {
+      target: { value: "delete" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Delete…" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(api.bulkUpdate).toHaveBeenCalledWith({ issueIds: ["iss-1", "iss-2"], action: "delete" });
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("2 selected")).not.toBeInTheDocument();
+    });
   });
 });

@@ -1670,6 +1670,123 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Bulk actions (Spec 007) — selection layer over the ticket ledger.
+   Ruled bars in the same family as `.filter-bar`; native controls; existing
+   tokens only (petrol selected treatment, mono counts). No new colors/spacing.
+   -------------------------------------------------------------------------- */
+.bulk-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-1);
+  border-top: var(--border-subtle);
+  border-bottom: var(--border-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.bulk-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulk-select-all input[type="checkbox"],
+.ledger-select input[type="checkbox"],
+.bulk-toolbar input[type="checkbox"] {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  accent-color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.bulk-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bulk-note {
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
+
+/* Destructive intent inside the bulk toolbar (coral = danger only, §7). */
+.bulk-note--danger {
+  color: var(--color-danger);
+}
+
+.bulk-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2);
+  border-top: var(--border-subtle);
+  border-bottom: var(--border-subtle);
+  margin-bottom: var(--space-3);
+  background: var(--color-surface);
+}
+
+.bulk-toolbar .bulk-field {
+  flex: 1 1 12rem;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+
+.bulk-toolbar .bulk-labels {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.bulk-toolbar .bulk-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* Ledger row selection column (native checkbox + row). */
+.ledger-item {
+  display: flex;
+  align-items: stretch;
+}
+
+.ledger-item > .ledger-row {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.ledger-item > .ledger-select {
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-4);
+  flex-shrink: 0;
+}
+
+/* Selected row treatment — petrol, additive to the ledger signature. */
+.ledger-row--selected {
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+.ledger-row--selected:hover {
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+/* ---------------------------------------------------------------------------
    Issue form / label picker
    -------------------------------------------------------------------------- */
 .issue-form {
@@ -2514,6 +2631,21 @@
     flex-direction: column;
   }
 
+  .bulk-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-toolbar .bulk-field {
+    min-width: 100%;
+  }
+
+  .bulk-toolbar .bulk-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .btn--block {
     width: 100%;
   }
@@ -2722,8 +2854,16 @@
   .field input,
   .field select,
   .field textarea,
-  .include-closed {
+  .include-closed,
+  .bulk-select-all,
+  .bulk-toolbar .bulk-field select,
+  .bulk-toolbar .btn,
+  .ledger-select {
     min-height: 44px;
+  }
+
+  .ledger-select {
+    align-items: center;
   }
 
   .card-actions .btn {
