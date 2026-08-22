@@ -15,6 +15,7 @@ import { Field } from "../components/Field.js";
 import { IssueForm } from "../components/IssueForm.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { ActivityPanel } from "../components/ActivityPanel.js";
+import { CollapsibleSection } from "../components/CollapsibleSection.js";
 import { issueKey } from "../lib/issueKey.js";
 import { labelTone } from "../lib/labelTone.js";
 
@@ -224,29 +225,33 @@ export function IssuePage() {
 
               <hr className="issue-divider" />
 
-              <div className="comments-head">
-                <h2 className="section-eyebrow">Comments</h2>
-                <span className="comments-count">{comments.length}</span>
-              </div>
-              {comments.length === 0 ? (
-                <EmptyState title="No comments yet" description="Be the first to comment on this issue." />
-              ) : (
-                <ul className="comment-list">
-                  {comments.map((c) => (
-                    <li key={c.id} className="comment">
-                      <p className="comment-body">{c.body}</p>
-                      <p className="comment-meta">
-                        <span className="comment-author">
-                          <Avatar name={c.author.name} decorative small />
-                          {c.author.name}
-                        </span>
-                        {" \u00b7 "}
-                        <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <CollapsibleSection
+                className="comments-section"
+                id="comments-region"
+                label="Comments"
+                count={comments.length}
+                storageKey="mini-issue-tracker:comments"
+              >
+                {comments.length === 0 ? (
+                  <EmptyState title="No comments yet" description="Be the first to comment on this issue." />
+                ) : (
+                  <ul className="comment-list">
+                    {comments.map((c) => (
+                      <li key={c.id} className="comment">
+                        <p className="comment-body">{c.body}</p>
+                        <p className="comment-meta">
+                          <span className="comment-author">
+                            <Avatar name={c.author.name} decorative small />
+                            {c.author.name}
+                          </span>
+                          {" \u00b7 "}
+                          <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CollapsibleSection>
               <hr className="issue-divider" />
               <ActivityPanel
                 issueId={issueId!}

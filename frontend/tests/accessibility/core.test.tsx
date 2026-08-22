@@ -14,6 +14,7 @@ import { Layout } from "../../src/components/Layout.js";
 import { DashboardPage } from "../../src/pages/DashboardPage.js";
 import { ProjectDialog } from "../../src/components/ProjectDialog.js";
 import { LabelsSection } from "../../src/components/LabelsSection.js";
+import { CollapsibleSection } from "../../src/components/CollapsibleSection.js";
 import { WorkspacePage } from "../../src/pages/WorkspacePage.js";
 import { IssuePage } from "../../src/pages/IssuePage.js";
 import { MyIssuesPage } from "../../src/pages/MyIssuesPage.js";
@@ -111,6 +112,18 @@ describe("accessibility", () => {
         <Badge tone="neutral">Owner</Badge>
       </>
     );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("CollapsibleSection has no axe violations expanded and collapsed", async () => {
+    const { container } = render(
+      <CollapsibleSection id="axe-region" label="Comments" count={2} storageKey="mini-issue-tracker:axe">
+        <p>Section content</p>
+      </CollapsibleSection>
+    );
+    expect(await axe(container)).toHaveNoViolations();
+
+    fireEvent.click(screen.getByRole("button", { name: /Comments/ }));
     expect(await axe(container)).toHaveNoViolations();
   });
 

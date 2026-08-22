@@ -2019,23 +2019,76 @@
 /* ---------------------------------------------------------------------------
    Comments — ruled ledger rows
    -------------------------------------------------------------------------- */
-.comments-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-
-.comments-head .section-eyebrow {
-  margin: 0;
-}
-
-.comments-count {
+/* ---------------------------------------------------------------------------
+   Collapsible sections — disclosure headers (Comments / Activity)
+   Content stays mounted; grid-template-rows drives the slide, visibility
+   removes collapsed content from tab order and the accessibility tree.
+   -------------------------------------------------------------------------- */
+.section-count {
   font-family: var(--font-mono);
   font-size: var(--text-meta);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.collapsible-heading {
+  margin: 0 0 var(--space-2);
+}
+
+.collapsible-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  margin: calc(var(--space-1) * -1) calc(var(--space-2) * -1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.collapsible-toggle:hover {
+  color: var(--color-accent);
+}
+
+.collapsible-caret {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+.collapsible-section--collapsed .collapsible-caret {
+  transform: rotate(-90deg);
+}
+
+.collapsible-region {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-normal) var(--ease-standard);
+}
+
+.collapsible-section:not(.collapsible-section--collapsed) .collapsible-region {
+  grid-template-rows: 1fr;
+}
+
+.collapsible-inner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear var(--duration-normal);
+}
+
+.collapsible-section:not(.collapsible-section--collapsed) .collapsible-inner {
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 .comment-list {
@@ -2473,10 +2526,6 @@
   margin-top: var(--space-6);
   padding-top: var(--space-4);
   border-top: var(--border-subtle);
-}
-
-.activity-panel .section-eyebrow {
-  margin-bottom: var(--space-3);
 }
 
 .activity-list {
