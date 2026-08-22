@@ -38,7 +38,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(4);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(5);
 
     const user = sqlite
       .prepare(`SELECT id, email, name FROM users WHERE id = ?`)
@@ -112,7 +112,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
       runMigrations(sqlite);
 
-      expect(sqlite.pragma("user_version", { simple: true })).toBe(4);
+      expect(sqlite.pragma("user_version", { simple: true })).toBe(5);
 
       const label = sqlite
         .prepare(`SELECT id, workspace_id, name, color FROM labels WHERE id = ?`)
@@ -158,5 +158,87 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
       sqlite.close();
     });
+  });
+});
+
+describe("migration 0005_activity_timestamp_ms", () => {
+  const SEED_MS = Date.now();
+
+  function seedIssueChain(sqlite: Database.Database) {
+    sqlite
+      .prepare(
+        `INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+      )
+      .run("u-1", "actor@example.com", "hash", SEED_MS, SEED_MS);
+    sqlite
+      .prepare(
+        `INSERT INTO workspaces (id, name, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+      )
+      .run("ws-1", "Workspace", "u-1", SEED_MS, SEED_MS);
+    sqlite
+      .prepare(
+        `INSERT INTO projects (id, workspace_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+      )
+      .run("p-1", "ws-1", "Project", SEED_MS, SEED_MS);
+    sqlite
+      .prepare(
+        `INSERT INTO issues (id, project_id, title, status, priority, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run("i-1", "p-1", "Issue", "Open", "Medium", SEED_MS, SEED_MS);
+  }
+
+  function insertActivity(sqlite: Database.Database, id: string, createdAt: number) {
+    sqlite
+      .prepare(
+        `INSERT INTO activities (id, issue_id, actor_id, type, created_at) VALUES (?, ?, ?, ?, ?)`
+      )
+      .run(id, "i-1", "u-1", "issue.created", createdAt);
+  }
+
+  function getCreatedAt(sqlite: Database.Database, id: string): number {
+    return (
+      sqlite.prepare(`SELECT created_at FROM activities WHERE id = ?`).get(id) as {
+        created_at: number;
+      }
+    ).created_at;
+  }
+
+  it("converts legacy seconds-based activity timestamps to milliseconds", () => {
+    const sqlite = new Database(":memory:");
+    sqlite.pragma("foreign_keys = ON");
+
+    for (const version of [1, 2, 3, 4]) {
+      sqlite.exec(migrationSql(version));
+    }
+    sqlite.pragma("user_version = 4");
+
+    seedIssueChain(sqlite);
+    insertActivity(sqlite, "a-legacy-seconds", 1787331428);
+
+    runMigrations(sqlite);
+
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(5);
+    expect(getCreatedAt(sqlite, "a-legacy-seconds")).toBe(1787331428000);
+
+    sqlite.close();
+  });
+
+  it("leaves already-millisecond timestamps untouched", () => {
+    const sqlite = new Database(":memory:");
+    sqlite.pragma("foreign_keys = ON");
+
+    for (const version of [1, 2, 3, 4]) {
+      sqlite.exec(migrationSql(version));
+    }
+    sqlite.pragma("user_version = 4");
+
+    seedIssueChain(sqlite);
+    insertActivity(sqlite, "a-modern-ms", 1787338116852);
+
+    runMigrations(sqlite);
+
+    expect(getCreatedAt(sqlite, "a-modern-ms")).toBe(1787338116852);
+
+    sqlite.close();
   });
 });
