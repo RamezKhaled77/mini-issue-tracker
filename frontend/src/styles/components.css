@@ -2871,3 +2871,113 @@
     padding: 0.5rem 0.625rem;
   }
 }
+
+/* ============================================================
+   Global Search (Spec 008) — "the ledger, lifted".
+   The overlay composes the existing .dialog; result rows are a
+   compact variant of .ledger-row. Tokens only.
+   ============================================================ */
+
+/* The trigger is a <button> sharing .sidebar-link with anchors. */
+button.sidebar-link {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.search-dialog {
+  position: relative;
+}
+
+.search-dialog input {
+  width: 100%;
+}
+
+.search-clear {
+  position: absolute;
+  top: var(--space-1);
+  right: 0;
+  min-width: 32px;
+  min-height: 32px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-title);
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.search-clear:hover {
+  color: var(--color-text);
+}
+
+.search-body {
+  margin-top: var(--space-4);
+  border-top: var(--border-subtle);
+  padding-top: var(--space-3);
+  /* Fixed minimum so loading skeletons never shift the layout. */
+  min-height: 180px;
+}
+
+.search-empty {
+  padding: var(--space-5) var(--space-2);
+}
+
+.search-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.search-hint,
+.search-noresults,
+.search-count {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-meta);
+}
+
+.search-count {
+  color: var(--color-text-muted);
+}
+
+.search-list {
+  margin-top: var(--space-2);
+}
+
+/* Compact ledger-row variant for overlay density ("ledger, lifted"). */
+.ledger-row--search {
+  padding-block: var(--space-2);
+}
+
+.ledger-row--search:hover,
+.ledger-row--active {
+  background: var(--color-surface-hover);
+}
+
+.ledger-row--active {
+  outline: none;
+}
+
+.ledger-row--active .ticket-key {
+  color: var(--color-accent);
+}
+
+@media (max-width: 700px) {
+  /* Anchor the search sheet toward the top on small screens. */
+  .dialog-overlay:has(.search-dialog) {
+    align-items: flex-start;
+  }
+
+  .search-clear {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

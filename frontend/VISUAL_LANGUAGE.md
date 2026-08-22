@@ -559,6 +559,46 @@ never decorative, and never replaces status/priority colors.
 
 ---
 
+## 19b. Global Search — "the ledger, lifted" (overlay pattern)
+
+Global Search is an **overlay composition of existing primitives**, not a new
+component family. It is the product's only intentional "ledger, lifted"
+surface.
+
+**Trigger.** A `sidebar-link`-class button ("Search", magnifier icon) in the
+WORKSPACE nav group. It inherits all sidebar responsive states (full label →
+icon-rail tooltip at ≤1024px → top bar at ≤700px) via the `button.sidebar-link`
+reset rule. Tooltip text documents the shortcut: "Search (/)".
+
+**Overlay structure.** The search overlay **composes the existing Dialog**
+(`.dialog-overlay` / `.dialog`, full focus trap + Escape + focus-return
+contract). Inside: a labelled text input with a quiet × clear control, a
+hairline top rule, then a results region with a fixed minimum height (180px)
+so loading skeletons never shift layout. ~640px wide on desktop; at ≤700px the
+overlay anchors toward the top as a near-full-width sheet
+(`:has(.search-dialog)` scoping only). No gradients, glass, or palette
+aesthetics.
+
+**Result rows.** A compact ledger variant, `.ledger-row--search`:
+`data-priority` edge bar, `.ticket-key`, `.ledger-main` title,
+`.ledger-context` workspace/project caption, `.ledger-meta` badges
+(status → priority → labels → assignee), `data-overdue` treatment. Slightly
+reduced vertical padding versus page ledgers; hover/active treatment is
+`--color-surface-hover` plus petrol key (`.ledger-row--active` for the
+keyboard-driven active row). The whole row is the link; no chevron.
+
+**States.** Idle = mono petrol SEARCH eyebrow + one guidance line; loading =
+existing SkeletonRows; counts/errors announced politely (`role="status"`).
+Counts come from the API — never fabricated.
+
+**Keyboard.** `/` and Ctrl/Cmd+K open search from anywhere except typing
+contexts (input/textarea/select/contenteditable); ArrowUp/ArrowDown move the
+active result; Enter activates; Escape closes with focus return.
+
+**Reuse when:** building any transient cross-context lookup over
+ledger-shaped data. **Do NOT reuse** to bolt command execution or navigation
+shortcuts onto search — this pattern is lookup-only, not a launcher.
+
 ## 19a. Bulk Selection & Actions (ledger interaction layer)
 
 Bulk Actions are an **interaction layer over the ticket ledger**, not a new

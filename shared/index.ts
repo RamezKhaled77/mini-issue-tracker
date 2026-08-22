@@ -232,3 +232,29 @@ export interface BulkIssueResponse {
   issueIds: string[];
   count: number;
 }
+
+/* Global search (Spec 008). */
+export const SEARCH_MIN_LENGTH = 2;
+export const SEARCH_MAX_LENGTH = 200;
+export const SEARCH_DEFAULT_LIMIT = 20;
+export const SEARCH_MAX_LIMIT = 50;
+
+export interface SearchIssue {
+  id: string;
+  projectId: string;
+  workspaceId: string;
+  title: string;
+  status: IssueStatus;
+  priority: IssuePriority;
+  dueDate: string | null;
+  labelIds: string[];
+  labels: Label[];
+  assignee: { id: string; name: string } | null;
+  projectName: string;
+  workspaceName: string;
+}
+
+export interface SearchResponse {
+  total: number;
+  items: SearchIssue[];
+}

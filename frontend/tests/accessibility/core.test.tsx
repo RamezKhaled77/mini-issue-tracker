@@ -28,6 +28,7 @@ vi.mock("../../src/api/client.js", () => ({
     patch: vi.fn(),
     delete: vi.fn(),
     getActivity: vi.fn().mockResolvedValue({ items: [] }),
+    search: vi.fn(),
   },
   ApiError: class extends Error {},
 }));
@@ -43,7 +44,38 @@ function renderAuthed(children: ReactNode) {
 }
 
 describe("accessibility", () => {
-  it("login page has no axe violations", async () => {
+  it("global search overlay is axe-clean when opened and with results", async () => {
+    const { container } = renderAuthed(<Layout />);
+    fireEvent.click(screen.getByRole("button", { name: "Search issues" }));
+    await screen.findByRole("dialog");
+    expect(await axe(container)).toHaveNoViolations();
+
+    vi.mocked(api.search).mockResolvedValueOnce({
+      total: 1,
+      items: [
+        {
+          id: "a1b2c3d4-0000-4000-8000-000000000001",
+          projectId: "proj-1",
+          workspaceId: "ws-1",
+          title: "Result issue",
+          status: "Open",
+          priority: "High",
+          dueDate: null,
+          labelIds: [],
+          labels: [],
+          assignee: null,
+          projectName: "Web",
+          workspaceName: "Alpha",
+        },
+      ],
+    });
+    const input = screen.getByRole("textbox", { name: "Search issues" });
+    fireEvent.change(input, { target: { value: "res" } });
+    await screen.findByText("Result issue");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+it("login page has no axe violations", async () => {
     const { container } = renderAuthed(<LoginPage />);
     expect(await axe(container)).toHaveNoViolations();
   });

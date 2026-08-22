@@ -1,6 +1,6 @@
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { issueLabels, issues, memberships, projects, users, workspaces } from "../db/schema.js";
+import { issueLabels, issues, projects, users, workspaces } from "../db/schema.js";
 import { resolveDisplayName } from "../lib/identity.js";
 import { buildLabelMap } from "../lib/labels.js";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
@@ -28,26 +28,8 @@ export function createMyIssuesService(deps: MyIssuesServiceDeps) {
     return dueDate !== null && dueDate < todayString() && status !== "Closed";
   }
 
-  function getReachableWorkspaceIds(userId: string): string[] {
-    const memberWorkspaceIds = deps.db
-      .select({ workspaceId: memberships.workspaceId })
-      .from(memberships)
-      .where(eq(memberships.userId, userId))
-      .all()
-      .map((r) => r.workspaceId);
-    const owned = deps.db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(
-        or(eq(workspaces.ownerId, userId), inArray(workspaces.id, memberWorkspaceIds))
-      )
-      .all()
-      .map((r) => r.id);
-    return owned;
-  }
-
   function getMyIssues(userId: string, query: MyIssuesQuery) {
-    const workspaceIds = getReachableWorkspaceIds(userId);
+    const workspaceIds = deps.membershipService.getReachableWorkspaceIds(userId);
     if (workspaceIds.length === 0) {
       return {
         overview: {

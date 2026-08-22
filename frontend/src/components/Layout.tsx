@@ -1,13 +1,40 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth.js";
 import { Button } from "./Button.js";
 import { Avatar } from "./Avatar.js";
+import { SearchDialog } from "./SearchDialog.js";
+
+function isTypingContext(element: Element | null): boolean {
+  if (!element) return false;
+  const tag = element.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    element.getAttribute("contenteditable") === "true"
+  );
+}
 
 export function Layout() {
   const { user, signout } = useAuth();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Global search shortcut: "/" or Ctrl/Cmd+K — never while typing in a field.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const isSlash = event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey;
+      const isModK = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+      if (!isSlash && !isModK) return;
+      if (isTypingContext(document.activeElement)) return;
+      event.preventDefault();
+      setSearchOpen(true);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   async function handleSignout() {
     await signout();
@@ -62,6 +89,19 @@ export function Layout() {
             </svg>
             <span className="sidebar-text">Workspaces</span>
           </NavLink>
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            data-sidebar-tooltip="Search (/)"
+            className="sidebar-link"
+            aria-label="Search issues"
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span className="sidebar-text">Search</span>
+          </button>
         </nav>
         <nav className="sidebar-nav" aria-label="Personal">
           <span className="sidebar-eyebrow">Personal</span>
@@ -106,6 +146,7 @@ export function Layout() {
       <main className="app-main" id="main-content">
         <Outlet />
       </main>
+      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

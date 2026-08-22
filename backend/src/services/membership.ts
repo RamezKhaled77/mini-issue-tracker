@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { memberships, users, workspaces } from "../db/schema.js";
 import { resolveDisplayName } from "../lib/identity.js";
@@ -73,7 +73,41 @@ export function createMembershipService(deps: MembershipServiceDeps) {
       .map((m) => ({ userId: m.userId, email: m.email, name: resolveDisplayName(m.name, m.email) }));
   }
 
-  return { isMember, isOwner, requireMember, requireOwner, addMember, removeMember, listMemberIds, listMembers };
+  /**
+   * Every workspace whose issues the user may see: memberships ∪ owned workspaces.
+   * Single source of truth for cross-workspace scopes (My Issues, Global Search).
+   */
+  function getReachableWorkspaceIds(userId: string): string[] {
+    return deps.db
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(
+        or(
+          eq(workspaces.ownerId, userId),
+          inArray(
+            workspaces.id,
+            deps.db
+              .select({ workspaceId: memberships.workspaceId })
+              .from(memberships)
+              .where(eq(memberships.userId, userId))
+          )
+        )
+      )
+      .all()
+      .map((r) => r.id);
+  }
+
+  return {
+    isMember,
+    isOwner,
+    requireMember,
+    requireOwner,
+    addMember,
+    removeMember,
+    listMemberIds,
+    listMembers,
+    getReachableWorkspaceIds,
+  };
 }
 
 export type MembershipService = ReturnType<typeof createMembershipService>;

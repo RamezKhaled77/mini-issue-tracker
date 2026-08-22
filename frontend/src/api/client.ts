@@ -1,4 +1,9 @@
-import type { ActivityListResponse, BulkIssueRequest, BulkIssueResponse } from "@mini-issue-tracker/shared";
+import type {
+  ActivityListResponse,
+  BulkIssueRequest,
+  BulkIssueResponse,
+  SearchResponse,
+} from "@mini-issue-tracker/shared";
 
 export class ApiError extends Error {
   status: number;
@@ -42,7 +47,7 @@ function buildUrl(path: string, params?: Record<string, unknown>): string {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string, options?: RequestInit) => request<T>(path, options),
   post: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: "POST", body: data === undefined ? undefined : JSON.stringify(data) }),
   patch: <T>(path: string, data: unknown) =>
@@ -52,4 +57,9 @@ export const api = {
     request<ActivityListResponse>(buildUrl(`/issues/${issueId}/activity`, params as Record<string, unknown> | undefined)),
   bulkUpdate: (body: BulkIssueRequest) =>
     request<BulkIssueResponse>("/issues/bulk", { method: "POST", body: JSON.stringify(body) }),
+  search: (q: string, options?: { limit?: number; signal?: AbortSignal }) =>
+    request<SearchResponse>(
+      buildUrl("/search", { q, limit: options?.limit }),
+      options?.signal ? { signal: options.signal } : undefined
+    ),
 };
