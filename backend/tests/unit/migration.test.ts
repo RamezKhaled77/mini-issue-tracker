@@ -38,7 +38,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(5);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
 
     const user = sqlite
       .prepare(`SELECT id, email, name FROM users WHERE id = ?`)
@@ -112,7 +112,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
       runMigrations(sqlite);
 
-      expect(sqlite.pragma("user_version", { simple: true })).toBe(5);
+      expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
 
       const label = sqlite
         .prepare(`SELECT id, workspace_id, name, color FROM labels WHERE id = ?`)
@@ -217,7 +217,7 @@ describe("migration 0005_activity_timestamp_ms", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(5);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
     expect(getCreatedAt(sqlite, "a-legacy-seconds")).toBe(1787331428000);
 
     sqlite.close();
@@ -238,6 +238,57 @@ describe("migration 0005_activity_timestamp_ms", () => {
     runMigrations(sqlite);
 
     expect(getCreatedAt(sqlite, "a-modern-ms")).toBe(1787338116852);
+
+    sqlite.close();
+  });
+});
+
+describe("migration 0006_saved_views", () => {
+  it("applies cleanly to a 0005 schema and creates the saved_views table with indexes", () => {
+    const sqlite = new Database(":memory:");
+    sqlite.pragma("foreign_keys = ON");
+
+    for (const version of [1, 2, 3, 4, 5]) {
+      sqlite.exec(migrationSql(version));
+    }
+    sqlite.pragma("user_version = 5");
+
+    runMigrations(sqlite);
+
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
+
+    const tables = (sqlite
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
+      )
+      .all() as { name: string }[]).map((t) => t.name);
+    expect(tables).toContain("saved_views");
+
+    const cols = sqlite.prepare(`PRAGMA table_info(saved_views)`).all() as {
+      name: string;
+      notnull: number;
+    }[];
+    const colNames = cols.map((c) => c.name);
+    expect(colNames).toEqual(
+      expect.arrayContaining([
+        "id",
+        "workspace_id",
+        "created_by_id",
+        "name",
+        "filters",
+        "created_at",
+        "updated_at",
+      ])
+    );
+
+    const indexes = (sqlite
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'saved_views' ORDER BY name`
+      )
+      .all() as { name: string }[]).map((i) => i.name);
+    expect(indexes).toContain("saved_views_workspace_name_idx");
+    expect(indexes).toContain("saved_views_workspace_idx");
+    expect(indexes).toContain("saved_views_created_by_idx");
 
     sqlite.close();
   });

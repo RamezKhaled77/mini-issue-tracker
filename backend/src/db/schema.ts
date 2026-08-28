@@ -165,6 +165,31 @@ export const activities = sqliteTable(
   })
 );
 
+export const savedViews = sqliteTable(
+  "saved_views",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    createdById: text("created_by_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    filters: text("filters").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    workspaceNameIdx: uniqueIndex("saved_views_workspace_name_idx").on(
+      table.workspaceId,
+      table.name
+    ),
+    workspaceIdx: index("saved_views_workspace_idx").on(table.workspaceId),
+    createdByIdx: index("saved_views_created_by_idx").on(table.createdById),
+  })
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ownedWorkspaces: many(workspaces),
@@ -218,4 +243,15 @@ export const labelsRelations = relations(labels, ({ one, many }) => ({
 export const activitiesRelations = relations(activities, ({ one }) => ({
   issue: one(issues, { fields: [activities.issueId], references: [issues.id] }),
   actor: one(users, { fields: [activities.actorId], references: [users.id] }),
+}));
+
+export const savedViewsRelations = relations(savedViews, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [savedViews.workspaceId],
+    references: [workspaces.id],
+  }),
+  creator: one(users, {
+    fields: [savedViews.createdById],
+    references: [users.id],
+  }),
 }));

@@ -258,3 +258,43 @@ export interface SearchResponse {
   total: number;
   items: SearchIssue[];
 }
+
+/* Saved Views (Spec 009). */
+export const VIEW_NAME_MAX_LENGTH = 60;
+export const SAVED_VIEW_FILTERS_VERSION = 1;
+
+export interface SavedViewFilters {
+  version: typeof SAVED_VIEW_FILTERS_VERSION;
+  projectId: string;
+  search?: string;
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  labelId?: string;
+}
+
+export interface SavedView {
+  id: string;
+  workspaceId: string;
+  createdById: string;
+  name: string;
+  /**
+   * Resolved filter configuration. Absent when the stored config could not be
+   * safely deserialized (an "unreadable" view); such a view remains listed so it
+   * can be renamed/deleted, but its filters cannot be restored.
+   */
+  filters: SavedViewFilters | undefined;
+  /** False when the stored config is unreadable; the view config is never mutated. */
+  filtersValid: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSavedViewRequest {
+  name: string;
+  filters: SavedViewFilters;
+}
+
+export interface UpdateSavedViewRequest {
+  name?: string;
+  filters?: SavedViewFilters;
+}
