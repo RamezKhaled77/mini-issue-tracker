@@ -1117,7 +1117,42 @@ Before considering any future UI work complete, verify:
 
 ---
 
-## 41. Final Principle
+## 41. Saved Views Shelf (Spec 009)
+
+The workspace page's left column hosts a **Saved Views** shelf
+(`.saved-views-panel`), placed after Labels. It is a quiet ruled-row list in the
+same family as the labels panel — not a card grid, not a widget.
+
+Structure:
+
+- `section-header` + `section-title` ("Saved views") — same as other side
+  sections; no separate primary button (the create affordance lives in the
+  issue toolbar's `filter-meta` as a ghost "Save view" button).
+- `view-list` / `view-row` rows: hairline `border-top` rules, first row
+  borderless — identical rhythm to `.label-row`.
+- Row anatomy: a text **button** with the view name (`view-row-name`, meta
+  size, semibold, ellipsis), an optional quiet `view-row-note`
+  (`"project unavailable"` / `"label unavailable"` / `"unavailable"`), and
+  trailing ghost Edit / danger Delete actions (`view-row-actions`).
+
+States:
+
+- **Active view**: the applied view's name button turns petrol
+  (`--color-accent`) via `.view-row--active` and carries
+  `aria-current="true"` — state is communicated by color *and* semantics.
+- **Unavailable** (unreadable config or deleted project): name button is
+  disabled, rendered in `--color-text-muted`, with the quiet note as the
+  non-color signal (`title` mirrors the note).
+- Hover on applicable rows: `--color-accent-hover`. No elevation, no new
+  tokens.
+
+Reuse this pattern for any future "small named, activatable resource list"
+inside a workspace column. Do **not** use it for primary navigation, do not
+add counts or decorative icons, and do not promote rows to cards.
+
+---
+
+## 42. Final Principle
 
 The most important rule in this document:
 

@@ -10,6 +10,10 @@ vi.mock("../../src/api/client.js", () => ({
     patch: vi.fn(),
     delete: vi.fn(),
     bulkUpdate: vi.fn(),
+    listSavedViews: vi.fn(),
+    createSavedView: vi.fn(),
+    updateSavedView: vi.fn(),
+    deleteSavedView: vi.fn(),
   },
   ApiError: class extends Error {},
 }));
@@ -45,9 +49,26 @@ beforeEach(() => {
     if (path === "/workspaces/ws-1/members") {
       return Promise.resolve({ items: [] });
     }
+    if (path === "/workspaces/ws-1/views") {
+      return Promise.resolve({ items: [] });
+    }
     return Promise.resolve({ items: [] });
   });
 });
+
+function savedView(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "view-1",
+    workspaceId: "ws-1",
+    createdById: "u1",
+    name: "Open frontend bugs",
+    filters: { version: 1, projectId: "proj-1", status: "Open" },
+    filtersValid: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
 
 function renderPage() {
   return render(
@@ -260,6 +281,7 @@ describe("WorkspacePage overdue ledger rows", () => {
 
 describe("WorkspacePage bulk actions", () => {
   function mockTwoIssues() {
+    vi.mocked(api.listSavedViews).mockResolvedValue({ items: [] } as never);
     vi.mocked(api.get).mockImplementation((path: string) => {
       if (path === "/workspaces/ws-1") {
         return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
@@ -381,5 +403,100 @@ describe("WorkspacePage bulk actions", () => {
     await waitFor(() => {
       expect(screen.queryByText("2 selected")).not.toBeInTheDocument();
     });
+  });
+});
+describe("WorkspacePage saved views", () => {
+  function mockViews(views: unknown[]) {
+    vi.mocked(api.listSavedViews).mockResolvedValue({ items: views } as never);
+  }
+
+  it("loads and renders saved views", async () => {
+    mockViews([savedView()]);
+    renderPage();
+    expect(await screen.findByRole("button", { name: "Open frontend bugs" })).toBeInTheDocument();
+  });
+
+  it("saves the current filters as a named view", async () => {
+    mockViews([]);
+    vi.mocked(api.createSavedView).mockResolvedValueOnce({ view: savedView() } as never);
+    renderPage();
+
+    await screen.findByText("Frontend");
+    fireEvent.change(screen.getByPlaceholderText("Search title or description"), {
+      target: { value: "login bug" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+    fireEvent.change(await screen.findByLabelText("View name"), {
+      target: { value: "Login bugs" },
+    });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save view" }));
+
+    await waitFor(() => {
+      expect(api.createSavedView).toHaveBeenCalledWith("ws-1", {
+        name: "Login bugs",
+        filters: { version: 1, projectId: "proj-1", search: "login bug" },
+      });
+    });
+  });
+
+  it("applying a view restores its filters and switches the project", async () => {
+    mockViews([
+      savedView({
+        id: "view-2",
+        name: "Urgent web",
+        filters: { version: 1, projectId: "proj-2", priority: "Urgent" },
+      }),
+    ]);
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") return Promise.resolve(dashboardStats(0));
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({
+          items: [
+            { id: "proj-1", workspaceId: "ws-1", name: "Frontend" },
+            { id: "proj-2", workspaceId: "ws-1", name: "Website" },
+          ],
+        });
+      }
+      if (path === "/projects/proj-2/issues?priority=Urgent") {
+        return Promise.resolve({ items: [] });
+      }
+      if (path.startsWith("/projects/")) return Promise.resolve({ items: [] });
+      return Promise.resolve({ items: [] });
+    });
+    renderPage();
+
+    const viewButton = await screen.findByRole("button", { name: "Urgent web" });
+    fireEvent.click(viewButton);
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith("/projects/proj-2/issues?priority=Urgent");
+    });
+    expect(viewButton).toHaveAttribute("aria-current", "true");
+  });
+
+  it("manual filter changes deactivate the active view", async () => {
+    mockViews([savedView()]);
+    renderPage();
+
+    const viewButton = await screen.findByRole("button", { name: "Open frontend bugs" });
+    fireEvent.click(viewButton);
+    await waitFor(() => expect(viewButton).toHaveAttribute("aria-current", "true"));
+
+    fireEvent.change(screen.getByPlaceholderText("Search title or description"), {
+      target: { value: "something else" },
+    });
+    await waitFor(() => expect(viewButton).not.toHaveAttribute("aria-current"));
+  });
+
+  it("defers applying a view whose project is gone and shows a note", async () => {
+    mockViews([savedView({ filters: { version: 1, projectId: "gone" } })]);
+    renderPage();
+
+    const viewButton = await screen.findByRole("button", { name: "Open frontend bugs" });
+    expect(viewButton).toBeDisabled();
+    expect(screen.getByText("project unavailable")).toBeInTheDocument();
   });
 });

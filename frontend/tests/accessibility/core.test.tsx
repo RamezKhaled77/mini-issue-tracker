@@ -14,6 +14,8 @@ import { Layout } from "../../src/components/Layout.js";
 import { DashboardPage } from "../../src/pages/DashboardPage.js";
 import { ProjectDialog } from "../../src/components/ProjectDialog.js";
 import { LabelsSection } from "../../src/components/LabelsSection.js";
+import { SavedViewsSection } from "../../src/components/SavedViewsSection.js";
+import type { SavedView } from "@mini-issue-tracker/shared";
 import { CollapsibleSection } from "../../src/components/CollapsibleSection.js";
 import { WorkspacePage } from "../../src/pages/WorkspacePage.js";
 import { IssuePage } from "../../src/pages/IssuePage.js";
@@ -29,6 +31,10 @@ vi.mock("../../src/api/client.js", () => ({
     delete: vi.fn(),
     getActivity: vi.fn().mockResolvedValue({ items: [] }),
     search: vi.fn(),
+    listSavedViews: vi.fn().mockResolvedValue({ items: [] }),
+    createSavedView: vi.fn(),
+    updateSavedView: vi.fn(),
+    deleteSavedView: vi.fn(),
   },
   ApiError: class extends Error {},
 }));
@@ -281,6 +287,22 @@ it("login page has no axe violations", async () => {
       }
       if (path === "/workspaces/ws-1/projects") {
         return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend" }] });
+      }
+      if (path === "/workspaces/ws-1/views") {
+        return Promise.resolve({
+          items: [
+            {
+              id: "view-1",
+              workspaceId: "ws-1",
+              createdById: "u1",
+              name: "Open frontend",
+              filters: { version: 1, projectId: "proj-1", status: "Open" },
+              filtersValid: true,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+        });
       }
       if (path === "/projects/proj-1/issues") {
         return Promise.resolve({
@@ -632,6 +654,68 @@ it("login page has no axe violations", async () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Fix login" }));
     expect(await screen.findByRole("group", { name: "Bulk actions" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("1 selected");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
+describe("saved views accessibility", () => {
+  const savedViewRow: SavedView = {
+    id: "view-1",
+    workspaceId: "ws-1",
+    createdById: "u1",
+    name: "Open frontend",
+    filters: { version: 1, projectId: "proj-1", status: "Open" },
+    filtersValid: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("saved views shelf has no axe violations with active and unavailable views", async () => {
+    const { container } = render(
+      <SavedViewsSection
+        workspaceId="ws-1"
+        views={[
+          savedViewRow,
+          {
+            ...savedViewRow,
+            id: "view-2",
+            name: "Broken",
+            filtersValid: false,
+            filters: undefined,
+          },
+        ]}
+        projects={[{ id: "proj-1", workspaceId: "ws-1", name: "Frontend" }]}
+        labels={[]}
+        loading={false}
+        activeViewId="view-1"
+        saveSignal={0}
+        getFilters={() => ({ version: 1, projectId: "proj-1" })}
+        onSelect={() => {}}
+        onChange={async () => {}}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Open frontend" })).toHaveAttribute(
+      "aria-current",
+      "true"
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("save view dialog has no axe violations", async () => {
+    const { container } = render(
+      <SavedViewsSection
+        workspaceId="ws-1"
+        views={[savedViewRow]}
+        projects={[{ id: "proj-1", workspaceId: "ws-1", name: "Frontend" }]}
+        labels={[]}
+        loading={false}
+        activeViewId={null}
+        saveSignal={1}
+        getFilters={() => ({ version: 1, projectId: "proj-1" })}
+        onSelect={() => {}}
+        onChange={async () => {}}
+      />
+    );
+    await screen.findByRole("dialog");
     expect(await axe(container)).toHaveNoViolations();
   });
 });

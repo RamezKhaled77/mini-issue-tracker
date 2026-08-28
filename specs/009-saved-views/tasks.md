@@ -31,7 +31,7 @@ description: "Task list for Saved Views implementation"
 **Purpose**: Shared contract additions the whole feature compiles against — no backend or
 frontend code can typecheck until these exist. Spec: §10–§11, D-01.
 
-- [ ] T001 Add `SavedViewFilters`, `SavedView`, `CreateSavedViewRequest`,
+- [x] T001 Add `SavedViewFilters`, `SavedView`, `CreateSavedViewRequest`,
   `UpdateSavedViewRequest` and constants `VIEW_NAME_MAX_LENGTH = 60`,
   `SAVED_VIEW_FILTERS_VERSION = 1` to `shared/index.ts`; `SavedView.filters` typed as the
   parsed `SavedViewFilters` (versioned, `{ version, projectId, search?, status?, priority?,
@@ -46,23 +46,23 @@ frontend code can typecheck until these exist. Spec: §10–§11, D-01.
 **Purpose**: Migration + schema + domain + validator that MUST exist before any route or
 UI work can consume the resource. Spec: §10 (data model), §12 (security), D-06/D-08.
 
-- [ ] T002 [P] Create `backend/src/db/migrations/0006_saved_views.sql` — `saved_views`
+- [x] T002 [P] Create `backend/src/db/migrations/0006_saved_views.sql` — `saved_views`
   (id TEXT PK; `workspace_id` FK CASCADE; `created_by_id` FK CASCADE; `name`;
   `filters` TEXT NOT NULL versioned JSON; `created_at`/`updated_at` INTEGER), unique index
   `saved_views_workspace_name_idx(workspace_id, name)` (D-08 → 409), indexes on
   `workspace_id` and `created_by_id`. Matches `0004_activities.sql` style (D-06).
-- [ ] T003 [P] Add matching `savedViews` `sqliteTable` + relations to
+- [x] T003 [P] Add matching `savedViews` `sqliteTable` + relations to
   `backend/src/db/schema.ts`.
-- [ ] T004 Create `backend/src/domain/savedView.ts` — `createSavedViewRecord(workspaceId,
+- [x] T004 Create `backend/src/domain/savedView.ts` — `createSavedViewRecord(workspaceId,
   createdById, name, filters)` mirroring `label.ts`/`project.ts` (`randomUUID`; `filters`
   kept as the parsed object, serialized at the service boundary).
-- [ ] T005 Create `backend/src/api/validators/savedView.ts` — `savedViewFiltersSchema`
+- [x] T005 Create `backend/src/api/validators/savedView.ts` — `savedViewFiltersSchema`
   (`version: z.literal(1)`; `projectId`/`labelId` uuid; `search` trimmed ≤200; enums for
   status/priority; reject extra keys), `createSavedViewSchema` (name trimmed 1..60),
   `updateSavedViewSchema` (partial + `refine` ≥1 field).
-- [ ] T006 [P] Unit tests `backend/tests/unit/saved-views-validator.test.ts` — name
+- [x] T006 [P] Unit tests `backend/tests/unit/saved-views-validator.test.ts` — name
   bounds/whitespace, version rejection, enum/length/extra-key validation, ≥1-field update.
-- [ ] T007 Extend `backend/tests/unit/migration.test.ts` — `0006` applies cleanly on the
+- [x] T007 Extend `backend/tests/unit/migration.test.ts` — `0006` applies cleanly on the
   existing schema.
 
 **Checkpoint**: migration + validator unit tests green; `npm run typecheck -w backend` +
@@ -78,7 +78,7 @@ server-enforced authorization and duplicate handling. Spec: §11–§13, D-05/D-
 **Independent Test**: Integration coverage (T010) stands alone — create/list/rename/delete
 shapes, 409 duplicates, 403 cross-workspace, 422 validation, stale refs returned as stored.
 
-- [ ] T008 Create `backend/src/services/savedView.ts` — `createSavedViewService({ db,
+- [x] T008 Create `backend/src/services/savedView.ts` — `createSavedViewService({ db,
   membershipService })` with `getWorkspaceIdForView` (mirrors
   `LabelService.getWorkspaceIdForLabel`), `create`/`list`/`update`/`delete`; every route
   `requireMember` (D-05); write-time validation that `projectId` is in the workspace and
@@ -86,11 +86,11 @@ shapes, 409 duplicates, 403 cross-workspace, 422 validation, stale refs returned
   validation); serialize filters JSON on write, parse + re-validate on read (unparseable →
   safe unreadable marker, never a crash); duplicate unique violation →
   `409 CONFLICT` "A view with this name already exists"; bump `updated_at` on rename.
-- [ ] T009 Create `backend/src/api/routes/savedViews.ts` and wire in
+- [x] T009 Create `backend/src/api/routes/savedViews.ts` and wire in
   `backend/src/api/routes/index.ts` — `POST/GET /workspaces/:workspaceId/views`,
   `PATCH/DELETE /views/:id`; `requireAuth`; zod `safeParse` → `422 VALIDATION` with the
   standard `fields` map; 403 for non-member / 404 for missing view (mirrors labels.ts).
-- [ ] T010 Integration tests `backend/tests/integration/saved-views.test.ts` (modeled on
+- [x] T010 Integration tests `backend/tests/integration/saved-views.test.ts` (modeled on
   `labels.test.ts`): create 201 shape / list order / rename 200 / delete 204; duplicate
   create + rename → 409; blank/whitespace/over-length name → 422; invalid filters (bad
   enum, foreign project, foreign label, unknown version, extra keys) → 422; missing
@@ -108,9 +108,9 @@ shapes, 409 duplicates, 403 cross-workspace, 422 validation, stale refs returned
 **Purpose**: The frontend contract layer + pure filter-resolution logic every UI task uses,
 independently testable. Spec: §13 (stale references), D-01/D-04.
 
-- [ ] T011 [P] Extend `frontend/src/api/client.ts` — `listSavedViews`, `createSavedView`,
+- [x] T011 [P] Extend `frontend/src/api/client.ts` — `listSavedViews`, `createSavedView`,
   `updateSavedView`, `deleteSavedView` reusing the existing `get`/`post`/`patch`/`delete`.
-- [ ] T012 [P] Create `frontend/src/lib/savedViewFilters.ts` — pure resolver given a
+- [x] T012 [P] Create `frontend/src/lib/savedViewFilters.ts` — pure resolver given a
   `SavedViewFilters` config + loaded projects + labels, returning
   `{ projectId?, appliedFilters, stale: { project?, label? } }` (spec §13); never injects
   replacement values. Unit tests in `frontend/tests/component/saved-view-filters.test.ts`.
@@ -128,18 +128,18 @@ with the shared Dialog. Spec: §14–§17, D-05/D-09/D-10.
 **Independent Test**: `SavedViewsSection` renders/operates standalone via a mocked `api`;
 workspace-page integration (T017) verifies apply-to-issues.
 
-- [ ] T013 [P] Create `frontend/src/components/SavedViewsSection.tsx` — `section-header` +
+- [x] T013 [P] Create `frontend/src/components/SavedViewsSection.tsx` — `section-header` +
   `section-title` "Saved views", rows in the `.label-list`/`.label-row` family
   (`.view-list`/`.view-row` only if a distinct class is warranted, styled from the same
   tokens), `EmptyState` ("No saved views yet") + `SkeletonRows`; ghost **Edit** (rename via
   shared `Dialog` + `Field`, Escape/focus-return) and **Delete** destructive-gated via the
   shared `Dialog` (danger button, Cancel path); per-row quiet stale "unavailable" note
   (§13). Props: `views`, `activeViewId`, `loading`, `onApply`, `onChange`.
-- [ ] T014 [P] CSS in `frontend/src/styles/components.css` — `.view-row--active` (existing
+- [x] T014 [P] CSS in `frontend/src/styles/components.css` — `.view-row--active` (existing
   petrol tokens), any `.view-unavailable` quiet note, 44px coarse-pointer registration,
   ≤375/≤700 stacking (reuse `.filter-bar`/`.label-list` responsive rules; no new
   colors/spacing/radii/shadows).
-- [ ] T015 [P] Component tests `frontend/tests/component/saved-views-section.test.tsx` —
+- [x] T015 [P] Component tests `frontend/tests/component/saved-views-section.test.tsx` —
   empty/loading/error states; rename (PATCH) + delete (confirm → DELETE); keyboard
   (Tab, Enter select, Escape); axe-clean shelf + rename/delete dialogs.
 
@@ -157,18 +157,18 @@ current filters and refetches via the existing `listIssues`. Spec: §14–§15 (
 current filters; selecting a view replaces state and refetches; stale project/label
 behave per §13.
 
-- [ ] T016 Extend `frontend/src/pages/WorkspacePage.tsx` — load views alongside labels;
+- [x] T016 Extend `frontend/src/pages/WorkspacePage.tsx` — load views alongside labels;
   render `SavedViewsSection` in the left rail; track `activeViewId`.
-- [ ] T017 Add the **Save view** affordance (ghost `Button`, per spec §14.2) in the
+- [x] T017 Add the **Save view** affordance (ghost `Button`, per spec §14.2) in the
   `filter-meta` region of the existing `filter-bar` — opens the shared `Dialog` with a
   labelled name `Field` (`autoFocus`, `required`), **Cancel**, primary **Save**; captures
   the exact current `{ search, status, priority, labelId }` + `selectedProject` at open
   time; POST on submit; refresh shelf. Saving with empty filters is valid (D-11).
-- [ ] T018 Wire selection → resolve (`lib/savedViewFilters.ts`) → `setSelectedProject` +
+- [x] T018 Wire selection → resolve (`lib/savedViewFilters.ts`) → `setSelectedProject` +
   set `search`/`statusFilter`/`priorityFilter`/`labelFilter` (replaces, D-04) + clear bulk
   selection; stale project → defer with quiet "unavailable" + safe back-out; stale label →
   drop label + quiet note; rely on the existing `loadIssues` effect (no new query path).
-- [ ] T019 Extend `frontend/tests/component/workspace-page.test.tsx` — apply restores
+- [x] T019 Extend `frontend/tests/component/workspace-page.test.tsx` — apply restores
   project+filters and refetches; replace-preconditions; stale project (no crash) + stale
   label (applied w/o label + note); saving empty filters is valid; error states.
 
@@ -181,10 +181,10 @@ behave per §13.
 **Purpose**: Full keyboard / screen-reader / reduced-motion correctness and breakpoint
 behavior for the shelf + dialogs. Spec: §16–§17.
 
-- [ ] T020 [P] Extend `frontend/tests/accessibility/core.test.tsx` — axe audit of the
+- [x] T020 [P] Extend `frontend/tests/accessibility/core.test.tsx` — axe audit of the
   shelf, Save/Rename dialogs, and active-view treatment (`aria-current` + petrol, never
   color-only); keep existing accessibility tests green.
-- [ ] T021 Responsive smoke in component tests at ≤375 / ≤700 — shelf stacks within the
+- [x] T021 Responsive smoke in component tests at ≤375 / ≤700 — shelf stacks within the
   single-column rail, no horizontal overflow, 44px touch targets, filter-bar Save-view
   stacks (`frontend/tests/component/workspace-page.test.tsx` + saved-views tests).
 
@@ -198,15 +198,15 @@ behavior for the shelf + dialogs. Spec: §16–§17.
 **Purpose**: Final style review against `VISUAL_LANGUAGE.md`, docs only if a genuinely new
 pattern ships, and full automated verification. Spec: §15, §24.
 
-- [ ] T022 Review the finished UI against the visual-review checklist (§15): hierarchy,
+- [x] T022 Review the finished UI against the visual-review checklist (§15): hierarchy,
   rhythm, structure, typography, color, reuse, accessibility, responsiveness. Confirm the
   ledger remains the primary surface; no cards/shadows/new tokens.
-- [ ] T023 Update `frontend/VISUAL_LANGUAGE.md` ONLY if implementation introduced a genuinely
+- [x] T023 Update `frontend/VISUAL_LANGUAGE.md` ONLY if implementation introduced a genuinely
   new reusable pattern (view-shelf anatomy / active-view treatment / Save-view
   affordance) — document exact structure, tokens, spacing, states, responsive + a11y
   behavior, where to reuse / when not to. Otherwise record "No visual language changes were
   introduced; the existing system was extended."
-- [ ] T024 Run full verification **separately per package** to avoid the monorepo timeout:
+- [x] T024 Run full verification **separately per package** to avoid the monorepo timeout:
   backend tests, frontend tests (component + a11y), typecheck (shared/backend/frontend),
   lint, build. Walk `spec.md` §23 acceptance scenarios; report honestly what was not
   verified without a browser.

@@ -1,11 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
-import type { Issue, Label, Project, BulkIssueRequest } from "@mini-issue-tracker/shared";
-import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
+import type {
+  Issue,
+  IssuePriority,
+  IssueStatus,
+  Label,
+  Project,
+  BulkIssueRequest,
+  SavedView,
+  SavedViewFilters,
+} from "@mini-issue-tracker/shared";
+import { ISSUE_PRIORITIES, ISSUE_STATUSES, SAVED_VIEW_FILTERS_VERSION } from "@mini-issue-tracker/shared";
 import { IssueForm } from "../components/IssueForm.js";
 import { Invitations } from "../components/Invitations.js";
 import { LabelsSection } from "../components/LabelsSection.js";
+import { SavedViewsSection } from "../components/SavedViewsSection.js";
+import { resolveSavedViewFilters } from "../lib/savedViewFilters.js";
 import { ProjectDialog } from "../components/ProjectDialog.js";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
@@ -51,6 +62,14 @@ export function WorkspacePage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Saved Views state (Spec 009).
+  const [views, setViews] = useState<SavedView[]>([]);
+  const [viewsLoading, setViewsLoading] = useState(true);
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const [staleNote, setStaleNote] = useState<string | null>(null);
+  const [saveSignal, setSaveSignal] = useState(0);
+  const appliedSnapshotRef = useRef("");
 
   // Bulk selection state (Spec 007).
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -100,6 +119,11 @@ export function WorkspacePage() {
     }
   }
 
+  async function loadViews() {
+    const res = await api.listSavedViews(workspaceId!);
+    setViews(res.items);
+  }
+
   useEffect(() => {
     api
       .get<{ workspace: WorkspaceDetail }>(`/workspaces/${workspaceId}`)
@@ -116,6 +140,9 @@ export function WorkspacePage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
     loadLabels().catch((err) => setError(err.message));
+    loadViews()
+      .catch((err) => setError(err.message))
+      .finally(() => setViewsLoading(false));
         api
       .get<{ items: BulkMember[] }>(`/workspaces/${workspaceId}/members`)
       .then((res) => setMembers(res.items ?? []))
@@ -127,6 +154,63 @@ export function WorkspacePage() {
   }, [selectedProject, search, statusFilter, priorityFilter, labelFilter]);
 
   const filtering = Boolean(search || statusFilter || priorityFilter || labelFilter);
+
+  // Saved Views (Spec 009): applying a view writes its snapshot here so manual
+  // filter changes afterwards are detected and deactivate the active view.
+  const filterSnapshot = [selectedProject, search, statusFilter, priorityFilter, labelFilter].join("|");
+  useEffect(() => {
+    if (appliedSnapshotRef.current && appliedSnapshotRef.current !== filterSnapshot) {
+      setActiveViewId(null);
+      setStaleNote(null);
+    }
+    appliedSnapshotRef.current = filterSnapshot;
+  }, [filterSnapshot]);
+
+  function currentFilters(): SavedViewFilters {
+    const filters: SavedViewFilters = {
+      version: SAVED_VIEW_FILTERS_VERSION,
+      projectId: selectedProject,
+    };
+    if (search) filters.search = search;
+    if (statusFilter) filters.status = statusFilter as IssueStatus;
+    if (priorityFilter) filters.priority = priorityFilter as IssuePriority;
+    if (labelFilter) filters.labelId = labelFilter;
+    return filters;
+  }
+
+  function handleSelectView(view: SavedView) {
+    const resolved = resolveSavedViewFilters(
+      view,
+      new Set(projects.map((p) => p.id)),
+      new Set(labels.map((l) => l.id))
+    );
+    if (!resolved) return;
+    if (resolved.staleProject) {
+      // Deferred: the view's project is gone — nothing to switch to, config untouched.
+      setStaleNote(
+        `"${view.name}" references a project that is no longer available.`
+      );
+      return;
+    }
+    setSelectedProject(resolved.projectId);
+    setSearch(resolved.search);
+    setStatusFilter(resolved.status);
+    setPriorityFilter(resolved.priority);
+    setLabelFilter(resolved.staleLabel ? "" : resolved.labelId);
+    setActiveViewId(view.id);
+    appliedSnapshotRef.current = [
+      resolved.projectId,
+      resolved.search,
+      resolved.status,
+      resolved.priority,
+      resolved.staleLabel ? "" : resolved.labelId,
+    ].join("|");
+    setStaleNote(
+      resolved.staleLabel
+        ? `A label in "${view.name}" is no longer available and was ignored.`
+        : null
+    );
+  }
 
   const visibleIds = issues.map((i) => i.id);
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
@@ -217,6 +301,18 @@ export function WorkspacePage() {
             loading={loading}
             onChange={loadLabels}
           />
+          <SavedViewsSection
+            workspaceId={workspaceId!}
+            views={views}
+            projects={projects}
+            labels={labels}
+            loading={loading || viewsLoading}
+            activeViewId={activeViewId}
+            saveSignal={saveSignal}
+            getFilters={currentFilters}
+            onSelect={handleSelectView}
+            onChange={loadViews}
+          />
         </div>
 
         <div className="issues-column">
@@ -291,6 +387,19 @@ export function WorkspacePage() {
                 </Field>
               )}
               <div className="filter-meta">
+                {staleNote && (
+                  <span className="filter-active" role="status">
+                    {staleNote}
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSaveSignal((n) => n + 1)}
+                  disabled={!selectedProject}
+                >
+                  Save view
+                </Button>
                 {(filtering || issues.length > 0) && (
                   <span className="filter-count">
                     {issues.length} result{issues.length === 1 ? "" : "s"}

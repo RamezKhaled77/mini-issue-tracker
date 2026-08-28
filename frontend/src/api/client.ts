@@ -2,7 +2,10 @@ import type {
   ActivityListResponse,
   BulkIssueRequest,
   BulkIssueResponse,
+  CreateSavedViewRequest,
+  SavedView,
   SearchResponse,
+  UpdateSavedViewRequest,
 } from "@mini-issue-tracker/shared";
 
 export class ApiError extends Error {
@@ -62,4 +65,15 @@ export const api = {
       buildUrl("/search", { q, limit: options?.limit }),
       options?.signal ? { signal: options.signal } : undefined
     ),
+  /* Saved Views (Spec 009). */
+  listSavedViews: (workspaceId: string) =>
+    request<{ items: SavedView[] }>(`/workspaces/${workspaceId}/views`),
+  createSavedView: (workspaceId: string, body: CreateSavedViewRequest) =>
+    request<{ view: SavedView }>(`/workspaces/${workspaceId}/views`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateSavedView: (id: string, body: UpdateSavedViewRequest) =>
+    request<{ view: SavedView }>(`/views/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteSavedView: (id: string) => request<void>(`/views/${id}`, { method: "DELETE" }),
 };
