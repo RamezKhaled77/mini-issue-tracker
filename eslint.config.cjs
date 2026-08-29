@@ -57,6 +57,7 @@ module.exports = [
         HTMLButtonElement: "readonly",
         HTMLDivElement: "readonly",
         HTMLInputElement: "readonly",
+        HTMLSelectElement: "readonly",
         KeyboardEvent: "readonly",
         Element: "readonly",
         AbortController: "readonly",

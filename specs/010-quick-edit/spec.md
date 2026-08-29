@@ -403,6 +403,12 @@ coarse-pointer target assertions where practical.
   adequate for row editing (verify during Phase 0 of the plan; if a row's workspace
   labels are not resolvable, restrict My Issues label Quick Edit to workspaces whose
   labels are loaded — surfaced honestly, never fabricated).
+- **Implementation addendum (Spec 010)**: on My Issues, `members`/`wsLabels` are only
+  fetched when the selection/filter resolves to a **single** workspace
+  (`singleWorkspaceId`). Rows whose `workspaceId !== singleWorkspaceId` render their
+  label badges and assignee chip **read-only** (plus a read-only `+N more` where
+  applicable) instead of fabricating option data; status/priority/due-date Quick Edit
+  remain available on every row. Recorded in `frontend/src/pages/MyIssuesPage.tsx`.
 
 ## 24. Open questions (require operator approval)
 

@@ -6,13 +6,21 @@ import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
 import { Badge } from "../components/Badge.js";
-import type { BadgeTone } from "../components/Badge.js";
 import { Button } from "../components/Button.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { Field } from "../components/Field.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { BulkToolbar } from "../components/BulkToolbar.js";
 import type { BulkMember } from "../components/BulkToolbar.js";
+import { QuickEditSelect } from "../components/QuickEditSelect.js";
+import { QuickEditLabels } from "../components/QuickEditLabels.js";
+import { QuickEditDate } from "../components/QuickEditDate.js";
+import {
+  openQuickEdit,
+  closeQuickEdit,
+  isQuickEditing,
+} from "../components/quickEdit.js";
+import type { QuickEditField, QuickEditState } from "../components/quickEdit.js";
 import { issueKey } from "../lib/issueKey.js";
 import { isOverdue } from "../lib/isOverdue.js";
 import { labelTone } from "../lib/labelTone.js";
@@ -38,6 +46,52 @@ export function MyIssuesPage() {
   const [applying, setApplying] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
+
+  // Quick Edit state (Spec 010). One edit at a time (D-06); busy blocks
+  // duplicate submissions (D-12); errors are row-local (D-08).
+  //
+  // D-10 limitation (spec §23 addendum): members/wsLabels are only fetched for
+  // the single selected workspace (`singleWorkspaceId`). Rows outside that
+  // workspace render their assignee chip / label badges read-only rather than
+  // fabricating option data.
+  const [quickEdit, setQuickEdit] = useState<QuickEditState | null>(null);
+  const [qeBusy, setQeBusy] = useState(false);
+  const [qeError, setQeError] = useState<{ issueId: string; message: string } | null>(null);
+  const qeAlertRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (qeError) {
+      qeAlertRef.current?.focus();
+    }
+  }, [qeError]);
+
+  function openField(issueId: string, field: QuickEditField) {
+    setQeError(null);
+    setQuickEdit((prev) => openQuickEdit(prev, issueId, field));
+  }
+
+  function closeField(issueId: string, field: QuickEditField) {
+    setQuickEdit((prev) => closeQuickEdit(prev, issueId, field));
+  }
+
+  /** Commit a Quick Edit change through the existing PATCH endpoint (D-01/D-02). */
+  async function commitQuickEdit(issueId: string, body: Record<string, unknown>) {
+    setQeBusy(true);
+    setQeError(null);
+    try {
+      await api.patch(`/issues/${issueId}`, body);
+      setQuickEdit(null);
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      // D-08: row-local Alert; the control stays open with the committed value.
+      setQeError({
+        issueId,
+        message: err instanceof Error ? err.message : "Could not update the issue",
+      });
+    } finally {
+      setQeBusy(false);
+    }
+  }
 
   const visibleItems = useMemo(
     () => applyMyIssuesView(data?.items ?? [], { search, status: statusFilter, priority: priorityFilter, sort }),
@@ -317,7 +371,12 @@ export function MyIssuesPage() {
 
           <ul className="ledger-list">
             {visibleItems.map((issue) => (
-              <li key={issue.id} className="ledger-item">
+              <li
+                key={issue.id}
+                className={`ledger-item${selected.has(issue.id) ? " ledger-item--selected" : ""}`}
+                data-priority={issue.priority.toLowerCase()}
+                data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
+              >
                 <span className="ledger-select">
                   <input
                     type="checkbox"
@@ -328,53 +387,125 @@ export function MyIssuesPage() {
                 </span>
                 <Link
                   to={`/workspaces/${issue.workspaceId}/issues/${issue.id}`}
-                  className={`ledger-row${selected.has(issue.id) ? " ledger-row--selected" : ""}`}
-                  data-priority={issue.priority.toLowerCase()}
-                  data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
+                  className="ledger-row-link"
                 >
-                <span className="ticket-key">{issueKey(issue.id)}</span>
-                <span className="ledger-main">
-                  <span className="ledger-title">{issue.title}</span>
-                  {issue.description && (
-                    <span className="ledger-subtitle">{issue.description}</span>
-                  )}
-                </span>
-                <span className="ledger-meta">
+                  <span className="ticket-key">{issueKey(issue.id)}</span>
+                  <span className="ledger-main">
+                    <span className="ledger-title">{issue.title}</span>
+                    {issue.description && (
+                      <span className="ledger-subtitle">{issue.description}</span>
+                    )}
+                  </span>
+                </Link>
+                <span className="ledger-meta" data-quickedit="meta">
                   <span className="ledger-context">
                     {issue.workspaceName} / {issue.projectName}
                   </span>
                   {isOverdue(issue.dueDate, issue.status) && (
                     <Badge tone="danger">Overdue</Badge>
                   )}
-                  <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
-                    {issue.status}
-                  </Badge>
-                  <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
-                    {issue.priority}
-                  </Badge>
-                  {(issue.labels ?? []).slice(0, 2).map((label) => (
-                    <Badge key={label.id} tone={labelTone(label.color)}>
-                      {label.name}
-                    </Badge>
-                  ))}
-                  {(issue.labels ?? []).length > 2 && (
-                    <span className="ledger-more-labels">
-                      +{issue.labels.length - 2} more
-                    </span>
+                  <QuickEditSelect
+                    field="status"
+                    open={isQuickEditing(quickEdit, issue.id, "status")}
+                    busy={qeBusy}
+                    value={issue.status}
+                    displayValue={issue.status}
+                    tone={`status-${issue.status.toLowerCase().replace(" ", "-")}`}
+                    options={ISSUE_STATUSES.map((s) => ({ value: s, label: s }))}
+                    onOpen={() => openField(issue.id, "status")}
+                    onCommit={(status) => commitQuickEdit(issue.id, { status })}
+                    onCancel={() => closeField(issue.id, "status")}
+                  />
+                  <QuickEditSelect
+                    field="priority"
+                    open={isQuickEditing(quickEdit, issue.id, "priority")}
+                    busy={qeBusy}
+                    value={issue.priority}
+                    displayValue={issue.priority}
+                    tone={`priority-${issue.priority.toLowerCase()}`}
+                    options={ISSUE_PRIORITIES.map((p) => ({ value: p, label: p }))}
+                    onOpen={() => openField(issue.id, "priority")}
+                    onCommit={(priority) => commitQuickEdit(issue.id, { priority })}
+                    onCancel={() => closeField(issue.id, "priority")}
+                  />
+                  {issue.workspaceId === singleWorkspaceId && wsLabels.length > 0 ? (
+                    <QuickEditLabels
+                      open={isQuickEditing(quickEdit, issue.id, "labels")}
+                      busy={qeBusy}
+                      labels={wsLabels}
+                      selected={issue.labels ?? []}
+                      onOpen={() => openField(issue.id, "labels")}
+                      onApply={(labelIds) => commitQuickEdit(issue.id, { labelIds })}
+                      onCancel={() => closeField(issue.id, "labels")}
+                    />
+                  ) : (
+                    /* Read-only degradation (spec §23 addendum): this row's
+                       workspace labels are not loaded — never fabricate options. */
+                    (issue.labels ?? []).slice(0, 2).map((label) => (
+                      <Badge key={label.id} tone={labelTone(label.color)}>
+                        {label.name}
+                      </Badge>
+                    ))
                   )}
-                  {issue.assignee && (
+                  {members.length > 0 && (
+                    <QuickEditSelect
+                      field="assignee"
+                      open={isQuickEditing(quickEdit, issue.id, "assignee")}
+                      busy={qeBusy}
+                      value={issue.assignee?.id ?? ""}
+                      displayValue={issue.assignee?.name ?? "Unassigned"}
+                      tone="neutral"
+                      triggerContent={
+                        issue.assignee ? (
+                          <span className="card-assignee">
+                            <Avatar name={issue.assignee.name} decorative small />
+                            {issue.assignee.name}
+                          </span>
+                        ) : (
+                          "Unassigned"
+                        )
+                      }
+                      options={[
+                        { value: "", label: "Unassigned" },
+                        ...members.map((m) => ({ value: m.userId, label: m.name })),
+                      ]}
+                      onOpen={() => openField(issue.id, "assignee")}
+                      onCommit={(assigneeId) =>
+                        commitQuickEdit(issue.id, { assigneeId: assigneeId || null })
+                      }
+                      onCancel={() => closeField(issue.id, "assignee")}
+                    />
+                  )}
+                  {members.length === 0 && issue.assignee && (
                     <span className="card-assignee">
                       <Avatar name={issue.assignee.name} decorative small />
                       {issue.assignee.name}
                     </span>
                   )}
+                  <QuickEditDate
+                    open={isQuickEditing(quickEdit, issue.id, "dueDate")}
+                    busy={qeBusy}
+                    dueDate={issue.dueDate}
+                    onOpen={() => openField(issue.id, "dueDate")}
+                    onApply={(dueDate) => commitQuickEdit(issue.id, { dueDate })}
+                    onCancel={() => closeField(issue.id, "dueDate")}
+                  />
                 </span>
                 <span className="ledger-chevron" aria-hidden="true">
                   &rarr;
                 </span>
-              </Link>
-            </li>
-          ))}
+                {qeError?.issueId === issue.id && (
+                  <Alert
+                    ref={qeAlertRef}
+                    role="alert"
+                    tabIndex={-1}
+                    className="qe-row-alert"
+                  >
+                    {qeError.message}
+                  </Alert>
+                )}
+              </li>
+            ))}
           </ul>
         </>
       ) : null}

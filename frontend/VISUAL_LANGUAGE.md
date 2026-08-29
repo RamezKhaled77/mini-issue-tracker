@@ -1152,7 +1152,74 @@ add counts or decorative icons, and do not promote rows to cards.
 
 ---
 
+## 41.5 Quick Edit — Badge-Styled Inline Editors (Spec 010)
+
+Quick Edit adds one genuinely new reusable pattern to the ledger: the
+**badge-styled inline editor**. Everything else reuses existing patterns
+(badges, `label-picker` chips, native inputs, `Alert`).
+
+### Split row anatomy (structural change)
+
+In a ledger row, the navigation `<Link>` (class `ledger-row-link`) wraps only
+`ticket-key` + `ledger-main`. The metadata run (`ledger-meta`, with the
+editable controls) and the `ledger-chevron` are **siblings** of the link inside
+`li.ledger-item`. The chevron is decorative (`aria-hidden`) and stays the
+trailing element so the resting visual order is unchanged: key → main → meta →
+chevron. Row chrome (surface, priority edge bar via `.ledger-item::before`,
+`data-overdue` coral treatment, `data-priority` bar color, `.ledger-item--selected`
+petrol treatment) lives on the **item**, so it spans the full row regardless of
+the link split. The Global Search overlay keeps the single-link `.ledger-row`
+anatomy — do not convert it.
+
+Do NOT nest interactive controls inside the row link; checkboxes and Quick Edit
+controls must remain siblings of it (accessibility rule: no nested interactive
+elements).
+
+### The badge-styled inline editor pattern
+
+Resting state: the editable value renders as the ordinary semantic badge
+(`.badge--status-*`, `.badge--priority-*`, `.badge--label-*`, `.badge--neutral`
+for assignee/due date) applied to a real `<button class="badge … qe-trigger">`
+with an accessible name of the form `"Change <field>, currently <value>"`. The
+due-date chip shows the real date or a quiet `Due` placeholder — never
+fabricated.
+
+Editable cue: on row hover or focus-within, triggers gain a **dotted underline
+in currentColor** (`text-decoration: underline dotted`, 1px, offset 3px) —
+typography, not decoration. Semantic badge colors never change.
+
+Open state: select-type fields (status/priority/assignee) swap in a native
+`<select class="qe-select">` with a petrol border; popover-type fields (labels,
+due date) open `.qe-popover` — a flat, absolutely-anchored surface with a
+hairline `--border-subtle` border, no shadow/elevation — hosting the existing
+`label-picker` chips or a native date input plus Apply/Cancel
+(`.qe-popover-actions`). Row rhythm never shifts (the popover is anchored, not
+in-flow).
+
+States and semantics:
+
+- **Busy**: control disabled + `aria-busy`; no duplicate submissions.
+- **Error**: row-local `Alert` (`role="alert"`, `.qe-row-alert` spans the row
+  below the content); the control stays open with the committed value; focus
+  moves to the error.
+- **Escape**: cancels with no request and returns focus to the trigger.
+- **One edit at a time** across the whole page (`{ issueId, field } | null`).
+
+Reuse rules: use this pattern only inside ledger meta runs (workspace ledger,
+My Issues ledger; future ticket-related lists). Do NOT use it for full forms,
+and never convert title/description into inline editors. When My Issues rows
+belong to a workspace whose labels/members are not loaded, render those values
+read-only — honest degradation, never fabricated options.
+
+Responsive: at ≤700px the meta run wraps right-aligned; popovers span the row
+width (`left/right: var(--space-4)`); triggers and selects grow to ≥44px height
+under `(pointer: coarse)` or ≤700px. No new colors, radii, shadows, or fonts —
+existing tokens only.
+
+---
+
 ## 42. Final Principle
+
 
 The most important rule in this document:
 

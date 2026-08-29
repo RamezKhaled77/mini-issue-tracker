@@ -265,15 +265,15 @@ describe("WorkspacePage overdue ledger rows", () => {
     });
     renderPage();
 
-    const lateRow = (await screen.findByText("Late task")).closest(".ledger-row") as HTMLElement;
+    const lateRow = (await screen.findByText("Late task")).closest(".ledger-item") as HTMLElement;
     expect(within(lateRow).getByText("Overdue")).toBeInTheDocument();
     expect(lateRow).toHaveAttribute("data-overdue", "true");
 
-    const onTimeRow = screen.getByText("On time").closest(".ledger-row") as HTMLElement;
+    const onTimeRow = screen.getByText("On time").closest(".ledger-item") as HTMLElement;
     expect(within(onTimeRow).queryByText("Overdue")).not.toBeInTheDocument();
     expect(onTimeRow).not.toHaveAttribute("data-overdue");
 
-    const closedLateRow = screen.getByText("Closed late").closest(".ledger-row") as HTMLElement;
+    const closedLateRow = screen.getByText("Closed late").closest(".ledger-item") as HTMLElement;
     expect(within(closedLateRow).queryByText("Overdue")).not.toBeInTheDocument();
     expect(closedLateRow).not.toHaveAttribute("data-overdue");
   });

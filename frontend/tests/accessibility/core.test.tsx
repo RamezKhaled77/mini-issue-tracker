@@ -518,6 +518,75 @@ it("login page has no axe violations", async () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("ledger with Quick Edit open and busy states is axe-clean", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/workspaces/ws-1") {
+        return Promise.resolve({ workspace: { id: "ws-1", name: "Alpha", ownerId: "u1", isOwner: true } });
+      }
+      if (path === "/workspaces/ws-1/dashboard") {
+        return Promise.resolve({
+          total: 1,
+          byStatus: { Open: 1, "In Progress": 0, Closed: 0 },
+          byPriority: { Low: 0, Medium: 1, High: 0, Urgent: 0 },
+        });
+      }
+      if (path === "/workspaces/ws-1/projects") {
+        return Promise.resolve({ items: [{ id: "proj-1", workspaceId: "ws-1", name: "Frontend" }] });
+      }
+      if (path === "/workspaces/ws-1/labels") {
+        return Promise.resolve({
+          items: [{ id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" }],
+        });
+      }
+      if (path === "/workspaces/ws-1/members") {
+        return Promise.resolve({ items: [{ userId: "u2", name: "Sam Rivera", email: "s@e.com" }] });
+      }
+      if (path === "/projects/proj-1/issues") {
+        return Promise.resolve({
+          items: [
+            {
+              id: "iss-1",
+              projectId: "proj-1",
+              title: "Logout bug",
+              description: null,
+              status: "Open",
+              priority: "Medium",
+              assigneeId: "u2",
+              assignee: { id: "u2", name: "Sam Rivera", email: "s@e.com" },
+              dueDate: null,
+              labelIds: ["l1"],
+              labels: [{ id: "l1", workspaceId: "ws-1", name: "bug", color: "violet" }],
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    vi.mocked(api.patch).mockImplementation(() => new Promise(() => {}));
+
+    const { container } = render(
+      <MemoryRouter initialEntries={["/workspaces/ws-1"]}>
+        <Routes>
+          <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText("Logout bug");
+
+    // Open state: the status trigger swapped to its select.
+    fireEvent.click(screen.getByRole("button", { name: "Change status, currently Open" }));
+    const select = screen.getByRole("combobox", { name: "Change status, currently Open" });
+    expect(await axe(container)).toHaveNoViolations();
+
+    // Busy state: the PATCH never resolves; the control is disabled + aria-busy.
+    fireEvent.change(select, { target: { value: "In Progress" } });
+    const busySelect = await screen.findByRole("combobox", {
+      name: "Change status, currently Open",
+    });
+    expect(busySelect).toBeDisabled();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it("project dialog delete confirmation has a safe cancel path", async () => {
     const { container } = render(
       <ProjectDialog

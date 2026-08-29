@@ -128,7 +128,7 @@ describe("MyIssuesPage ledger (US2)", () => {
     expect(await screen.findByText("Fix login")).toBeInTheDocument();
     expect(screen.getByText(issueKey("iss-1"))).toBeInTheDocument();
     expect(screen.getByText("Alpha / Frontend")).toBeInTheDocument();
-    const row = screen.getByText("Fix login").closest(".ledger-row") as HTMLElement;
+    const row = screen.getByText("Fix login").closest(".ledger-item") as HTMLElement;
     expect(within(row).getByText("Open")).toBeInTheDocument();
     expect(within(row).getByText("High")).toBeInTheDocument();
     expect(within(row).getByText("bug")).toBeInTheDocument();
@@ -162,15 +162,15 @@ describe("MyIssuesPage ledger (US2)", () => {
     );
     renderPage();
 
-    const lateRow = (await screen.findByText("Late task")).closest(".ledger-row") as HTMLElement;
+    const lateRow = (await screen.findByText("Late task")).closest(".ledger-item") as HTMLElement;
     expect(within(lateRow).getByText("Overdue")).toBeInTheDocument();
     expect(lateRow).toHaveAttribute("data-overdue", "true");
 
-    const onTimeRow = screen.getByText("On time").closest(".ledger-row") as HTMLElement;
+    const onTimeRow = screen.getByText("On time").closest(".ledger-item") as HTMLElement;
     expect(within(onTimeRow).queryByText("Overdue")).not.toBeInTheDocument();
     expect(onTimeRow).not.toHaveAttribute("data-overdue");
 
-    const closedLateRow = screen.getByText("Closed late").closest(".ledger-row") as HTMLElement;
+    const closedLateRow = screen.getByText("Closed late").closest(".ledger-item") as HTMLElement;
     expect(within(closedLateRow).queryByText("Overdue")).not.toBeInTheDocument();
     expect(closedLateRow).not.toHaveAttribute("data-overdue");
   });
