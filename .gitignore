@@ -14,6 +14,10 @@ data/
 .env.local
 .env.*.local
 
+# Cookie files (may contain live session tokens) — used for local curl testing only
+cookies.txt
+cookies2.txt
+
 # Logs
 *.log
 npm-debug.log*
