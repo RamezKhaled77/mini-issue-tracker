@@ -189,3 +189,58 @@ describe("IssuePage comment author (US3)", () => {
     expect(screen.queryByText("u-legacy")).not.toBeInTheDocument();
   });
 });
+
+describe("IssuePage keyboard shortcuts (Spec 009)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(api.get).mockResolvedValue({ issue, items: [] });
+  });
+
+  function press(key: string, init: KeyboardEventInit = {}) {
+    fireEvent.keyDown(document.body, { key, ...init });
+  }
+
+  it("opens the edit dialog with E", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: "Delete issue" });
+    press("e");
+    expect(await screen.findByText("Update the details of this issue.")).toBeInTheDocument();
+  });
+
+  it("opens the delete confirmation with D and never deletes directly", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: "Delete issue" });
+    press("d");
+    expect(
+      await screen.findByRole("button", { name: "Delete issue confirmation" })
+    ).toBeInTheDocument();
+    expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  it("focuses the comment composer with C", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: "Delete issue" });
+    press("c");
+    const composer = screen.getByPlaceholderText("Add a comment");
+    await waitFor(() => expect(document.activeElement).toBe(composer));
+  });
+
+  it("does not fire E while typing in the composer", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: "Delete issue" });
+    const composer = screen.getByPlaceholderText("Add a comment");
+    composer.focus();
+    press("e");
+    expect(screen.queryByText("Update the details of this issue.")).not.toBeInTheDocument();
+  });
+
+  it("does not fire issue shortcuts while a dialog is open (FR-06)", async () => {
+    renderPage();
+    await screen.findByRole("button", { name: "Delete issue" });
+    // Open the delete-confirmation dialog via its button; its panel (not an input) holds focus.
+    fireEvent.click(screen.getByRole("button", { name: "Delete issue" }));
+    await screen.findByRole("button", { name: "Delete issue confirmation" });
+    press("e");
+    expect(screen.queryByText("Update the details of this issue.")).not.toBeInTheDocument();
+  });
+});

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
+import { registerModal, unregisterModal } from "../lib/modalLayer.js";
 
 interface DialogProps {
   open: boolean;
@@ -22,6 +23,8 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
 
   useEffect(() => {
     if (!open) return;
+
+    registerModal();
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
     panelRef.current?.focus();
@@ -55,6 +58,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
+      unregisterModal();
       document.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus();
     };

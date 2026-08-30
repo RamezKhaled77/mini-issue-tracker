@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import type { Issue, Activity } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
+import { useKeyboardShortcuts } from "../lib/useKeyboardShortcuts.js";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
 import { Badge } from "../components/Badge.js";
@@ -47,6 +48,42 @@ export function IssuePage() {
   const [loading, setLoading] = useState(true);
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Contextual shortcuts — IssuePage only (Spec 009, FR-03). Enable once the issue has
+  // loaded; `D` only opens the existing confirmation dialog (never a direct delete).
+  useKeyboardShortcuts(
+    [
+      {
+        id: "issue.edit",
+        keys: ["e"],
+        context: "issue",
+        group: "Issue",
+        description: "Edit this issue",
+        enabled: () => Boolean(issue),
+        action: () => setEditOpen(true),
+      },
+      {
+        id: "issue.delete",
+        keys: ["d"],
+        context: "issue",
+        group: "Issue",
+        description: "Delete this issue (opens confirmation)",
+        enabled: () => Boolean(issue),
+        action: () => setDeleteOpen(true),
+      },
+      {
+        id: "issue.comment",
+        keys: ["c"],
+        context: "issue",
+        group: "Issue",
+        description: "Focus the comment composer",
+        enabled: () => Boolean(issue),
+        action: () => commentTextareaRef.current?.focus(),
+      },
+    ],
+    [issue, loading]
+  );
 
   function loadIssue() {
     return api.get<{ issue: Issue }>(`/issues/${issueId}`).then((res) => {
@@ -263,6 +300,7 @@ export function IssuePage() {
                 <form className="inline-form" onSubmit={handleAddComment}>
                   <Field label="Comment" srOnlyLabel className="field-grow">
                     <textarea
+                      ref={commentTextareaRef}
                       value={commentBody}
                       onChange={(e) => setCommentBody(e.target.value)}
                       placeholder="Add a comment"

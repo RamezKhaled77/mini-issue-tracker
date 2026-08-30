@@ -1,40 +1,68 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth.js";
 import { Button } from "./Button.js";
 import { Avatar } from "./Avatar.js";
 import { SearchDialog } from "./SearchDialog.js";
-
-function isTypingContext(element: Element | null): boolean {
-  if (!element) return false;
-  const tag = element.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    element.getAttribute("contenteditable") === "true"
-  );
-}
+import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog.js";
+import { useKeyboardShortcuts } from "../lib/useKeyboardShortcuts.js";
 
 export function Layout() {
   const { user, signout } = useAuth();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
-  // Global search shortcut: "/" or Ctrl/Cmd+K — never while typing in a field.
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      const isSlash = event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey;
-      const isModK = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
-      if (!isSlash && !isModK) return;
-      if (isTypingContext(document.activeElement)) return;
-      event.preventDefault();
-      setSearchOpen(true);
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  // Single source of truth for the shell's shortcuts (Spec 009, D-02/D-03):
+  // `/` + Ctrl/Cmd+K are preserved verbatim; `?`, `G D`, `G M` are new. Guards
+  // (typing, modal) and the sequence engine live in the registry.
+  useKeyboardShortcuts(
+    [
+      {
+        id: "search.slash",
+        keys: ["/"],
+        context: "global",
+        group: "Global",
+        description: "Search issues",
+        action: () => setSearchOpen(true),
+      },
+      {
+        id: "search.modk",
+        keys: ["k"],
+        context: "global",
+        group: "Global",
+        isMod: true,
+        description: "Search issues",
+        action: () => setSearchOpen(true),
+      },
+      {
+        id: "help",
+        keys: ["?"],
+        context: "global",
+        group: "Global",
+        description: "Open keyboard shortcuts",
+        action: () => setHelpOpen(true),
+      },
+      {
+        id: "nav.dashboard",
+        keys: ["g", "d"],
+        context: "global",
+        group: "Global",
+        description: "Go to Dashboard",
+        action: () => navigate("/"),
+      },
+      {
+        id: "nav.myissues",
+        keys: ["g", "m"],
+        context: "global",
+        group: "Global",
+        description: "Go to My Issues",
+        action: () => navigate("/my-issues"),
+      },
+    ],
+    []
+  );
 
   async function handleSignout() {
     await signout();
@@ -131,6 +159,21 @@ export function Layout() {
           <Button
             type="button"
             variant="ghost"
+            onClick={() => setHelpOpen(true)}
+            className="sidebar-help"
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts"
+            data-sidebar-tooltip="Keyboard shortcuts (?)"
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M6.2 6a1.8 1.8 0 1 1 2.6 1.6c-.8.5-.8 1-.8 1.9M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span className="sidebar-signout-text">Keyboard shortcuts</span>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
             onClick={handleSignout}
             className="sidebar-signout"
             aria-label="Sign out"
@@ -147,6 +190,7 @@ export function Layout() {
         <Outlet />
       </main>
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <KeyboardShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

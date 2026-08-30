@@ -22,6 +22,9 @@ import { IssuePage } from "../../src/pages/IssuePage.js";
 import { MyIssuesPage } from "../../src/pages/MyIssuesPage.js";
 import { Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
+import { KeyboardShortcutsDialog } from "../../src/components/KeyboardShortcutsDialog.js";
+import { registerBindings } from "../../src/lib/shortcuts.js";
+import { resetModalLayer } from "../../src/lib/modalLayer.js";
 
 vi.mock("../../src/api/client.js", () => ({
   api: {
@@ -786,5 +789,52 @@ describe("saved views accessibility", () => {
     );
     await screen.findByRole("dialog");
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe("keyboard shortcuts dialog accessibility", () => {
+  it("is axe-clean with populated groups and closes via Escape (Spec 009)", async () => {
+    const dispose = registerBindings([
+      {
+        id: "search.slash",
+        keys: ["/"],
+        context: "global",
+        group: "Global",
+        description: "Search issues",
+        action: () => {},
+      },
+      {
+        id: "nav.dashboard",
+        keys: ["g", "d"],
+        context: "global",
+        group: "Global",
+        description: "Go to Dashboard",
+        action: () => {},
+      },
+      {
+        id: "issue.edit",
+        keys: ["e"],
+        context: "issue",
+        group: "Issue",
+        description: "Edit this issue",
+        action: () => {},
+      },
+    ]);
+
+    const onClose = vi.fn();
+    const { container } = render(
+      <MemoryRouter>
+        <KeyboardShortcutsDialog open onClose={onClose} />
+      </MemoryRouter>
+    );
+    await screen.findByRole("dialog");
+    expect(await axe(container)).toHaveNoViolations();
+
+    // Keyboard-only close path.
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    dispose();
+    resetModalLayer();
   });
 });

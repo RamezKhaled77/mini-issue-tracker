@@ -1218,6 +1218,48 @@ existing tokens only.
 
 ---
 
+## 41.6 Keyboard Shortcuts — Help Dialog & Key-Caps (Spec 009)
+
+Keyboard shortcuts are an **interaction layer**, not a visual feature. They add one
+genuinely new reusable pattern (the key-cap) and compose everything else from existing
+pieces. The centralized registry (`frontend/src/lib/shortcuts.ts` + `useKeyboardShortcuts`)
+is the single source of truth; `Escape`, `Tab`, and arrow navigation inside `Dialog` /
+`SearchDialog` / Quick Edit remain owned by those components.
+
+### The key-cap (`.kbd`)
+
+A minimal treatment for displaying a keyboard key name — used only inside the shortcuts
+help dialog (and any quiet tooltip hint). It is a **label**, not an interactive control:
+
+- Mono face (`--text-mono`), `--text-label` size, semibold, ink `--color-text`.
+- `--radius-sm` on a `--color-surface` fill with a hairline `--border-subtle`; a slightly
+  heavier bottom border (2px) gives a quiet keycap read. No elevation, no color.
+- Compact padding (`0.125rem 0.375rem`), `nowrap`, `line-height: 1.25`.
+
+Modifiers are platform-appropriate: `⌘` on macOS, `Ctrl` elsewhere (from
+`frontend/src/lib/kbd.ts`). Combo/separation tokens between keys render as a quiet mono
+"+" (modifier combos) or "then" (two-key sequences).
+
+**Reuse when:** displaying a shortcut elsewhere (tooltips). **Do NOT use** for badges,
+status/priority/labels, button text, or anything interactive — badges stay semantic (§28).
+
+### The shortcuts help dialog
+
+Composes the existing `Dialog` (`.dialog-overlay` / `.dialog`) with two ruled groups
+(GLOBAL / ISSUE) introduced by `section-eyebrow` headings. Each row is a flex ledger-style
+row: leading key-cap run (`.shortcut-keys`, fixed ~7rem) plus meta description
+(`.shortcut-desc`, `--text-meta`, muted), separated by a hairline `--border-subtle` like the
+comment/activity streams (§25). It lists **only** shortcuts that are registered and active —
+deferred or rejected shortcuts are never shown.
+
+- Focus trap, Escape close, and focus-return come free from `Dialog`.
+- The Issue group appears only while an issue page (its contextual bindings) is mounted.
+- Responsive: key-cap rows reflow to stacked rows on narrow widths; the key and its label
+  are never hidden; ≤700px dialog fills width, ≤375px near-full-screen (§31).
+- No new colors, radii, shadows, or fonts — existing tokens only.
+
+---
+
 ## 42. Final Principle
 
 
