@@ -39,14 +39,19 @@ function renderMentionedBody(
   if (!mentions || mentions.length === 0) return body;
   const names = [...new Set(mentions.map((m) => m.name))];
   const sorted = [...names].sort((a, b) => b.length - a.length);
-  const escaped = sorted.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const regex = new RegExp(`(@(${escaped.join("|")}))`, "g");
+  const escaped = sorted.map((n) => n.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&"));
+  // IMPORTANT: use a SINGLE capturing group. String.split() returns the
+  // captured groups in the result array, so a nested capturing group would
+  // leak the bare name as a separate part and render it AGAIN next to the
+  // mention span (the duplication bug). With one group we get
+  // [before, name, after] and re-add the "@" only when wrapping.
+  const regex = new RegExp(`@(${escaped.join("|")})`, "g");
   const parts = body.split(regex);
   return parts.map((part, i) => {
-    if (part.startsWith("@") && names.includes(part.slice(1))) {
+    if (names.includes(part)) {
       return (
         <span key={i} className="mention">
-          {part}
+          @{part}
         </span>
       );
     }
@@ -229,12 +234,35 @@ export function IssuePage() {
     if (!textarea) return;
     const value = textarea.value;
     const cursorPos = textarea.selectionStart;
+
+    // Find the '@' that opened this mention: the last '@' at/before the cursor.
     const textBeforeCursor = value.slice(0, cursorPos);
     const atIndex = textBeforeCursor.lastIndexOf("@");
+    if (atIndex === -1) {
+      setMentionOpen(false);
+      setMentionQuery("");
+      return;
+    }
+
+    // The mention token runs from the '@' up to the next whitespace (or end of
+    // the string). Replacing the whole token — not just up to the cursor — is
+    // what prevents the already-typed query text from leaking and duplicating
+    // the inserted name when the cursor is mid-word.
+    const afterAt = value.slice(atIndex + 1);
+    const nextSpace = afterAt.search(/\s/);
+    const tokenEnd = nextSpace === -1 ? value.length : atIndex + 1 + nextSpace;
+
     const before = value.slice(0, atIndex);
-    const after = value.slice(cursorPos);
+    const after = value.slice(tokenEnd);
     const mentionText = `@${member.name} `;
-    const newBody = before + mentionText + after;
+
+    // Idempotency guard: if the mention token is already exactly inserted at
+    // this position (e.g. the Enter key fired the select handler twice, or the
+    // list did not close before a second selection), do NOT insert again.
+    // This is what prevents the name from being duplicated in the textarea.
+    const alreadyInserted =
+      value.slice(atIndex, atIndex + mentionText.length) === mentionText;
+    const newBody = alreadyInserted ? value : before + mentionText + after;
     setCommentBody(newBody);
     setSelectedMentions((prev) => {
       const next = new Map(prev);
@@ -243,9 +271,11 @@ export function IssuePage() {
     });
     setMentionOpen(false);
     setMentionQuery("");
+    const newCursorPos = alreadyInserted
+      ? atIndex + mentionText.length
+      : before.length + mentionText.length;
     requestAnimationFrame(() => {
       textarea.focus();
-      const newCursorPos = before.length + mentionText.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     });
   }

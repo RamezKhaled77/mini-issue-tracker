@@ -190,4 +190,48 @@ describe("IssuePage mention rendering", () => {
     expect(body.closest(".comment-body")).toBeInTheDocument();
     expect(screen.getByText("@Bob Jones")).toBeInTheDocument();
   });
+
+  it("does NOT duplicate the mention name when rendering a posted comment", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/issues/iss-1") {
+        return Promise.resolve({
+          issue: {
+            id: "iss-1", projectId: "proj-1", title: "Test", description: null,
+            status: "Open", priority: "High", assigneeId: null, assignee: null,
+            dueDate: null, labelIds: [], labels: [],
+          },
+          items: [] as never[],
+        });
+      }
+      if (path === "/issues/iss-1/comments") {
+        return Promise.resolve({
+          items: [{
+            id: "c1", issueId: "iss-1", authorId: "u-1",
+            author: { id: "u-1", name: "Alice" },
+            body: "@ramez.elzoz.74 ",
+            createdAt: "2024-01-01T00:00:00Z",
+            mentions: [{ userId: "u-2", name: "ramez.elzoz.74" }],
+          }],
+        });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    vi.mocked(api.getMembers).mockResolvedValue({ items: [] });
+
+    render(
+      <MemoryRouter initialEntries={["/workspaces/ws-1/issues/iss-1"]}>
+        <Routes>
+          <Route path="/workspaces/:workspaceId/issues/:issueId" element={<IssuePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // The name must appear exactly once in the rendered comment.
+    const body = await screen.findByText(/ramez\.elzoz\.74/);
+    const commentBody = body.closest(".comment-body") as HTMLElement;
+    expect(commentBody).toBeInTheDocument();
+    // One mention span, and the bare name must not leak as plain text.
+    expect(commentBody!.querySelectorAll(".mention")).toHaveLength(1);
+    expect(commentBody!.textContent).toBe("@ramez.elzoz.74 ");
+  });
 });

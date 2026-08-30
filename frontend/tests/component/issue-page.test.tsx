@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { IssuePage } from "../../src/pages/IssuePage.js";
 
@@ -308,5 +308,47 @@ describe("IssuePage mention behavior (Spec 011)", () => {
     await waitFor(() =>
       expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument()
     );
+  });
+
+  it("inserts the mention once and never duplicates the name (cursor mid-word)", async () => {
+    const composer = (await typeInComposer("@ali")) as HTMLTextAreaElement;
+    const listbox = await screen.findByRole("listbox", { name: "Mention suggestions" });
+    await waitFor(() => {
+      const found = within(listbox)
+        .getAllByRole("option")
+        .find((o: HTMLElement) => o.textContent === "@Alice Smith");
+      expect(found).toBeTruthy();
+    });
+    const option = within(listbox)
+      .getAllByRole("option")
+      .find((o: HTMLElement) => o.textContent === "@Alice Smith")!;
+    // Simulate the cursor sitting right after the '@' (a common real-world state).
+    composer.selectionStart = 1;
+    composer.selectionEnd = 1;
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument()
+    );
+    expect(composer.value).toBe("@Alice Smith ");
+    expect(composer.value).not.toContain("@Alice Smith@Alice Smith");
+  });
+
+  it("inserts the mention once when selecting by click", async () => {
+    const composer = (await typeInComposer("@ali")) as HTMLTextAreaElement;
+    const listbox = await screen.findByRole("listbox", { name: "Mention suggestions" });
+    await waitFor(() => {
+      const found = within(listbox)
+        .getAllByRole("option")
+        .find((o: HTMLElement) => o.textContent === "@Alice Smith");
+      expect(found).toBeTruthy();
+    });
+    const option = within(listbox)
+      .getAllByRole("option")
+      .find((o: HTMLElement) => o.textContent === "@Alice Smith")!;
+    fireEvent.click(option);
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument()
+    );
+    expect(composer.value).toBe("@Alice Smith ");
   });
 });
