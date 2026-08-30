@@ -206,8 +206,14 @@ export function IssuePage() {
     setCommentBody(value);
     const textBeforeCursor = value.slice(0, cursorPos);
     const atIndex = textBeforeCursor.lastIndexOf("@");
-    if (atIndex !== -1) {
+    // Trigger only on '@' at the start of the input or after whitespace
+    // so that email addresses like a@b.com do not open the mention list.
+    const atIsBoundary =
+      atIndex === 0 ||
+      (atIndex > 0 && /\s/.test(textBeforeCursor[atIndex - 1]));
+    if (atIndex !== -1 && atIsBoundary) {
       const afterAt = textBeforeCursor.slice(atIndex + 1);
+      // A space after the '@' closes the list (e.g. typing "@abc ").
       if (!afterAt.includes(" ")) {
         setMentionQuery(textBeforeCursor.slice(atIndex));
         setMentionOpen(true);
@@ -215,6 +221,7 @@ export function IssuePage() {
       }
     }
     setMentionOpen(false);
+    setMentionQuery("");
   }
 
   function handleMentionSelect(member: MentionMember) {
@@ -226,7 +233,8 @@ export function IssuePage() {
     const atIndex = textBeforeCursor.lastIndexOf("@");
     const before = value.slice(0, atIndex);
     const after = value.slice(cursorPos);
-    const newBody = before + `@${member.name} ` + after;
+    const mentionText = `@${member.name} `;
+    const newBody = before + mentionText + after;
     setCommentBody(newBody);
     setSelectedMentions((prev) => {
       const next = new Map(prev);
@@ -234,15 +242,17 @@ export function IssuePage() {
       return next;
     });
     setMentionOpen(false);
+    setMentionQuery("");
     requestAnimationFrame(() => {
       textarea.focus();
-      const newCursorPos = before.length + `@${member.name} `.length;
+      const newCursorPos = before.length + mentionText.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     });
   }
 
   function handleDismissMention() {
     setMentionOpen(false);
+    setMentionQuery("");
   }
 
   useEffect(() => {
@@ -426,6 +436,7 @@ export function IssuePage() {
                         rows={3}
                       />
                       <MentionAutocomplete
+                        open={mentionOpen}
                         members={workspaceMembers}
                         query={mentionQuery}
                         activeIndex={mentionActiveIndex}

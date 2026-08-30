@@ -245,3 +245,68 @@ describe("IssuePage keyboard shortcuts (Spec 009)", () => {
     expect(screen.queryByText("Update the details of this issue.")).not.toBeInTheDocument();
   });
 });
+
+describe("IssuePage mention behavior (Spec 011)", () => {
+  const members = [
+    { userId: "u-1", name: "Alice Smith" },
+    { userId: "u-2", name: "Bob Jones" },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/issues/iss-1") {
+        return Promise.resolve({ issue, items: [] });
+      }
+      if (path === "/issues/iss-1/comments") {
+        return Promise.resolve({ items: [] });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    vi.mocked(api.getMembers).mockResolvedValue({ items: members });
+  });
+
+  async function typeInComposer(text: string, atEnd = true) {
+    renderPage();
+    const composer = await screen.findByPlaceholderText("Add a comment");
+    composer.focus();
+    fireEvent.change(composer, { target: { value: text } });
+    return composer;
+  }
+
+  it("opens the mention list when typing '@' at the start", async () => {
+    await typeInComposer("@");
+    expect(await screen.findByRole("listbox", { name: "Mention suggestions" })).toBeInTheDocument();
+  });
+
+  it("does NOT open the list for an '@' inside an email address", async () => {
+    await typeInComposer("email me at a@b.com");
+    expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument();
+  });
+
+  it("hides the list when the user presses Space after the '@' query", async () => {
+    await typeInComposer("@ali");
+    expect(await screen.findByRole("listbox", { name: "Mention suggestions" })).toBeInTheDocument();
+    await typeInComposer("@ali ");
+    expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument();
+  });
+
+  it("selects a mention on Enter and then hides the list", async () => {
+    const composer = await typeInComposer("@ali");
+    expect(await screen.findByRole("listbox", { name: "Mention suggestions" })).toBeInTheDocument();
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument()
+    );
+    expect((composer as HTMLTextAreaElement).value).toContain("@Alice Smith");
+  });
+
+  it("hides the list on Escape", async () => {
+    await typeInComposer("@");
+    expect(await screen.findByRole("listbox", { name: "Mention suggestions" })).toBeInTheDocument();
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox", { name: "Mention suggestions" })).not.toBeInTheDocument()
+    );
+  });
+});

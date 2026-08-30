@@ -845,6 +845,7 @@ describe("mention autocomplete a11y", () => {
   it("MentionAutocomplete listbox has no axe violations", async () => {
     const { container } = render(
       <MentionAutocomplete
+        open={true}
         members={[{ userId: "u-1", name: "Alice Smith" }]}
         query="@ali"
         activeIndex={0}

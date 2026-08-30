@@ -6,6 +6,7 @@ export interface MentionMember {
 }
 
 export interface MentionAutocompleteProps {
+  open: boolean;
   members: MentionMember[];
   query: string;
   activeIndex: number;
@@ -18,6 +19,7 @@ export interface MentionAutocompleteProps {
 const MAX_SUGGESTIONS = 10;
 
 export function MentionAutocomplete({
+  open,
   members,
   query,
   activeIndex,
@@ -50,32 +52,30 @@ export function MentionAutocomplete({
   }, [activeIndex, filtered.length]);
 
   useEffect(() => {
-    if (filtered.length === 0) return;
+    if (!open) return;
 
     function handleKeyDown(e: KeyboardEvent) {
       switch (e.key) {
         case "ArrowDown":
+          if (filtered.length === 0) return;
           e.preventDefault();
           e.stopPropagation();
           onActiveChange(Math.min(activeIndex + 1, filtered.length - 1));
           break;
         case "ArrowUp":
+          if (filtered.length === 0) return;
           e.preventDefault();
           e.stopPropagation();
           onActiveChange(Math.max(activeIndex - 1, 0));
           break;
         case "Enter":
-          e.preventDefault();
-          e.stopPropagation();
-          if (filtered[activeIndex]) {
-            onSelect(filtered[activeIndex]);
-          }
-          break;
         case "Tab":
           e.preventDefault();
           e.stopPropagation();
           if (filtered[activeIndex]) {
             onSelect(filtered[activeIndex]);
+          } else {
+            onDismiss();
           }
           break;
         case "Escape":
@@ -88,9 +88,9 @@ export function MentionAutocomplete({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [filtered, activeIndex, onSelect, onDismiss, onActiveChange]);
+  }, [open, filtered, activeIndex, onSelect, onDismiss, onActiveChange]);
 
-  if (!query.startsWith("@")) {
+  if (!open || !query.startsWith("@")) {
     return null;
   }
 

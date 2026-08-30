@@ -19,6 +19,7 @@ function renderAutocomplete(query: string, activeIndex: number = 0) {
     onActiveChange,
     ...render(
       <MentionAutocomplete
+        open={true}
         members={members}
         query={query}
         activeIndex={activeIndex}
@@ -64,6 +65,7 @@ describe("MentionAutocomplete", () => {
     const onActiveChange = vi.fn();
     render(
       <MentionAutocomplete
+        open={true}
         members={manyMembers}
         query="@m"
         activeIndex={0}
