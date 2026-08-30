@@ -27,7 +27,7 @@ export function commentRoutes(deps: CommentRouteDeps): Router {
       throw new ApiError(422, "VALIDATION", "Invalid comment input", fields);
     }
     res.status(201).json({
-      comment: commentService.addComment(req.params.issueId, userId, parsed.data.body),
+      comment: commentService.addComment(req.params.issueId, userId, parsed.data.body, parsed.data.mentions),
     });
   });
 

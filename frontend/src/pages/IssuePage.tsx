@@ -17,6 +17,8 @@ import { IssueForm } from "../components/IssueForm.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { ActivityPanel } from "../components/ActivityPanel.js";
 import { CollapsibleSection } from "../components/CollapsibleSection.js";
+import { MentionAutocomplete } from "../components/MentionAutocomplete.js";
+import type { MentionMember } from "../components/MentionAutocomplete.js";
 import { issueKey } from "../lib/issueKey.js";
 import { labelTone } from "../lib/labelTone.js";
 
@@ -27,10 +29,36 @@ interface Comment {
   author: { id: string; name: string };
   body: string;
   createdAt: string;
+  mentions?: Array<{ userId: string; name: string }>;
+}
+
+function renderMentionedBody(
+  body: string,
+  mentions?: Array<{ userId: string; name: string }>
+) {
+  if (!mentions || mentions.length === 0) return body;
+  const names = [...new Set(mentions.map((m) => m.name))];
+  const sorted = [...names].sort((a, b) => b.length - a.length);
+  const escaped = sorted.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const regex = new RegExp(`(@(${escaped.join("|")}))`, "g");
+  const parts = body.split(regex);
+  return parts.map((part, i) => {
+    if (part.startsWith("@") && names.includes(part.slice(1))) {
+      return (
+        <span key={i} className="mention">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
 }
 
 export function IssuePage() {
-  const { workspaceId, issueId } = useParams<{ workspaceId: string; issueId: string }>();
+  const { workspaceId, issueId } = useParams<{
+    workspaceId: string;
+    issueId: string;
+  }>();
   const navigate = useNavigate();
   const [issue, setIssue] = useState<Issue | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -48,10 +76,18 @@ export function IssuePage() {
   const [loading, setLoading] = useState(true);
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionActiveIndex, setMentionActiveIndex] = useState(0);
+  const [selectedMentions, setSelectedMentions] = useState<
+    Map<string, string>
+  >(new Map());
+  const [workspaceMembers, setWorkspaceMembers] = useState<
+    MentionMember[]
+  >([]);
   const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const mentionContainerRef = useRef<HTMLDivElement>(null);
 
-  // Contextual shortcuts — IssuePage only (Spec 009, FR-03). Enable once the issue has
-  // loaded; `D` only opens the existing confirmation dialog (never a direct delete).
   useKeyboardShortcuts(
     [
       {
@@ -85,38 +121,19 @@ export function IssuePage() {
     [issue, loading]
   );
 
-  function loadIssue() {
-    return api.get<{ issue: Issue }>(`/issues/${issueId}`).then((res) => {
-      setIssue(res.issue);
-      setStatus(res.issue.status);
-      setPriority(res.issue.priority);
-    });
-  }
-
-  function loadComments() {
-    return api.get<{ items: Comment[] }>(`/issues/${issueId}/comments`).then((res) => setComments(res.items));
-  }
-
-  function loadActivity() {
-    return api.getActivity(issueId!, { page: 1, pageSize: 50 })
-      .then((res) => {
-        setActivityItems(res.items);
-        setActivityTotal(res.total);
-        setActivityPage(res.page);
-      })
-      .catch((err) => {
-        console.error("Failed to load activity:", err);
-        setActivityItems([]);
-        setActivityTotal(0);
-        setActivityPage(1);
-      });
-  }
-
   useEffect(() => {
-    Promise.all([loadIssue(), loadComments(), loadActivity()])
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [issueId]);
+    if (!workspaceId) return;
+    let cancelled = false;
+    api
+      .getMembers(workspaceId)
+      .then((res) => {
+        if (!cancelled) setWorkspaceMembers(res.items ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -148,12 +165,110 @@ export function IssuePage() {
     };
   }, [workspaceId, issue?.projectId]);
 
+  async function loadIssue() {
+    return api.get<{ issue: Issue }>(`/issues/${issueId}`).then((res) => {
+      setIssue(res.issue);
+      setStatus(res.issue.status);
+      setPriority(res.issue.priority);
+    });
+  }
+
+  function loadComments() {
+    return api.get<{ items: Comment[] }>(`/issues/${issueId}/comments`).then((res) =>
+      setComments(res.items)
+    );
+  }
+
+  function loadActivity() {
+    return api.getActivity(issueId!, { page: 1, pageSize: 50 })
+      .then((res) => {
+        setActivityItems(res.items);
+        setActivityTotal(res.total);
+        setActivityPage(res.page);
+      })
+      .catch((err) => {
+        console.error("Failed to load activity:", err);
+        setActivityItems([]);
+        setActivityTotal(0);
+        setActivityPage(1);
+      });
+  }
+
+  useEffect(() => {
+    Promise.all([loadIssue(), loadComments(), loadActivity()])
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [issueId]);
+
+  function handleCommentChange(e: FormEvent<HTMLTextAreaElement>) {
+    const value = e.currentTarget.value;
+    const cursorPos = e.currentTarget.selectionStart;
+    setCommentBody(value);
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const atIndex = textBeforeCursor.lastIndexOf("@");
+    if (atIndex !== -1) {
+      const afterAt = textBeforeCursor.slice(atIndex + 1);
+      if (!afterAt.includes(" ")) {
+        setMentionQuery(textBeforeCursor.slice(atIndex));
+        setMentionOpen(true);
+        return;
+      }
+    }
+    setMentionOpen(false);
+  }
+
+  function handleMentionSelect(member: MentionMember) {
+    const textarea = commentTextareaRef.current;
+    if (!textarea) return;
+    const value = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const atIndex = textBeforeCursor.lastIndexOf("@");
+    const before = value.slice(0, atIndex);
+    const after = value.slice(cursorPos);
+    const newBody = before + `@${member.name} ` + after;
+    setCommentBody(newBody);
+    setSelectedMentions((prev) => {
+      const next = new Map(prev);
+      next.set(member.userId, member.name);
+      return next;
+    });
+    setMentionOpen(false);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const newCursorPos = before.length + `@${member.name} `.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    });
+  }
+
+  function handleDismissMention() {
+    setMentionOpen(false);
+  }
+
+  useEffect(() => {
+    if (!mentionOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        mentionContainerRef.current &&
+        !mentionContainerRef.current.contains(e.target as Node)
+      ) {
+        setMentionOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mentionOpen]);
+
   async function handleAddComment(e: FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      await api.post(`/issues/${issueId}/comments`, { body: commentBody });
+      await api.post(`/issues/${issueId}/comments`, {
+        body: commentBody,
+        mentions: Array.from(selectedMentions.keys()),
+      });
       setCommentBody("");
+      setSelectedMentions(new Map());
       await loadComments();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add comment");
@@ -275,7 +390,9 @@ export function IssuePage() {
                   <ul className="comment-list">
                     {comments.map((c) => (
                       <li key={c.id} className="comment">
-                        <p className="comment-body">{c.body}</p>
+                        <p className="comment-body">
+                          {renderMentionedBody(c.body, c.mentions)}
+                        </p>
                         <p className="comment-meta">
                           <span className="comment-author">
                             <Avatar name={c.author.name} decorative small />
@@ -299,14 +416,25 @@ export function IssuePage() {
               <div className="comment-composer">
                 <form className="inline-form" onSubmit={handleAddComment}>
                   <Field label="Comment" srOnlyLabel className="field-grow">
-                    <textarea
-                      ref={commentTextareaRef}
-                      value={commentBody}
-                      onChange={(e) => setCommentBody(e.target.value)}
-                      placeholder="Add a comment"
-                      required
-                      rows={3}
-                    />
+                    <div ref={mentionContainerRef} style={{ position: "relative" }}>
+                      <textarea
+                        ref={commentTextareaRef}
+                        value={commentBody}
+                        onChange={handleCommentChange}
+                        placeholder="Add a comment"
+                        required
+                        rows={3}
+                      />
+                      <MentionAutocomplete
+                        members={workspaceMembers}
+                        query={mentionQuery}
+                        activeIndex={mentionActiveIndex}
+                        onSelect={handleMentionSelect}
+                        onDismiss={handleDismissMention}
+                        onActiveChange={setMentionActiveIndex}
+                        listBoxId="mention-listbox"
+                      />
+                    </div>
                   </Field>
                   <Button type="submit" variant="primary">
                     Add comment

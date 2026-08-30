@@ -12,6 +12,7 @@ vi.mock("../../src/api/client.js", () => ({
     patch: vi.fn(),
     delete: vi.fn(),
     getActivity: vi.fn().mockResolvedValue({ items: [] }),
+    getMembers: vi.fn().mockResolvedValue({ items: [] }),
   },
   ApiError: class extends Error {},
 }));

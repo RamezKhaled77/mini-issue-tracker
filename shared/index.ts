@@ -76,6 +76,21 @@ export interface Comment {
   createdAt: string;
 }
 
+export interface CommentMention {
+  commentId: string;
+  mentionedUserId: string;
+  mentionedByName: string;
+}
+
+export interface CommentWithMentions extends Comment {
+  mentions: CommentMention[];
+}
+
+export interface CreateCommentRequest {
+  body: string;
+  mentions?: string[];
+}
+
 export type ActivityType =
   | "issue.created"
   | "issue.updated"

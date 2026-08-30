@@ -3363,3 +3363,86 @@ button.sidebar-link {
     min-height: 44px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+    Mention autocomplete (Spec 010)
+    -------------------------------------------------------------------------- */
+.mention-autocomplete {
+  position: absolute;
+  z-index: 10;
+  min-width: 16rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  list-style: none;
+  padding: var(--space-1);
+  margin: 0;
+}
+
+.mention-autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  min-height: 2.25rem;
+}
+
+@media (pointer: coarse) {
+  .mention-autocomplete-item {
+    min-height: 44px;
+  }
+}
+
+.mention-autocomplete-item:hover,
+.mention-autocomplete-item--active {
+  background: var(--color-accent-subtle);
+}
+
+.mention-autocomplete-item--active {
+  background: var(--color-accent-subtle);
+}
+
+.mention-autocomplete-prefix {
+  color: var(--color-text-faint);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-body);
+}
+
+.mention-autocomplete-name {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mention-autocomplete-empty {
+  padding: var(--space-3);
+  color: var(--color-text-faint);
+  font-size: var(--text-body);
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------------------
+    Mention inline style (Spec 010)
+    -------------------------------------------------------------------------- */
+.mention {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: default;
+}
+
+.mention:hover {
+  background: var(--color-surface-hover);
+}

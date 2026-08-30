@@ -38,7 +38,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(7);
 
     const user = sqlite
       .prepare(`SELECT id, email, name FROM users WHERE id = ?`)
@@ -112,7 +112,7 @@ describe("migration 0002_user_display_name (SC-006)", () => {
 
       runMigrations(sqlite);
 
-      expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
+      expect(sqlite.pragma("user_version", { simple: true })).toBe(7);
 
       const label = sqlite
         .prepare(`SELECT id, workspace_id, name, color FROM labels WHERE id = ?`)
@@ -217,7 +217,7 @@ describe("migration 0005_activity_timestamp_ms", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(7);
     expect(getCreatedAt(sqlite, "a-legacy-seconds")).toBe(1787331428000);
 
     sqlite.close();
@@ -255,7 +255,7 @@ describe("migration 0006_saved_views", () => {
 
     runMigrations(sqlite);
 
-    expect(sqlite.pragma("user_version", { simple: true })).toBe(6);
+    expect(sqlite.pragma("user_version", { simple: true })).toBe(7);
 
     const tables = (sqlite
       .prepare(

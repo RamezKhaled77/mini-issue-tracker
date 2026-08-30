@@ -24,6 +24,7 @@ import { Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
 import { KeyboardShortcutsDialog } from "../../src/components/KeyboardShortcutsDialog.js";
 import { registerBindings } from "../../src/lib/shortcuts.js";
+import { MentionAutocomplete } from "../../src/components/MentionAutocomplete.js";
 import { resetModalLayer } from "../../src/lib/modalLayer.js";
 
 vi.mock("../../src/api/client.js", () => ({
@@ -33,6 +34,7 @@ vi.mock("../../src/api/client.js", () => ({
     patch: vi.fn(),
     delete: vi.fn(),
     getActivity: vi.fn().mockResolvedValue({ items: [] }),
+    getMembers: vi.fn().mockResolvedValue({ items: [] }),
     search: vi.fn(),
     listSavedViews: vi.fn().mockResolvedValue({ items: [] }),
     createSavedView: vi.fn(),
@@ -836,5 +838,62 @@ describe("keyboard shortcuts dialog accessibility", () => {
 
     dispose();
     resetModalLayer();
+  });
+});
+
+describe("mention autocomplete a11y", () => {
+  it("MentionAutocomplete listbox has no axe violations", async () => {
+    const { container } = render(
+      <MentionAutocomplete
+        members={[{ userId: "u-1", name: "Alice Smith" }]}
+        query="@ali"
+        activeIndex={0}
+        onSelect={vi.fn()}
+        onDismiss={vi.fn()}
+        onActiveChange={vi.fn()}
+        listBoxId="test-listbox"
+      />
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe("issue page mention rendering a11y", () => {
+  it("issue page with mentions has no axe violations", async () => {
+    vi.mocked(api.get).mockImplementation((path: string) => {
+      if (path === "/issues/iss-1") {
+        return Promise.resolve({
+          issue: {
+            id: "iss-1", projectId: "proj-1", title: "Test", description: null,
+            status: "Open", priority: "High", assigneeId: null, assignee: null,
+            dueDate: null, labelIds: [], labels: [],
+          },
+          items: [] as never[],
+        });
+      }
+      if (path === "/issues/iss-1/comments") {
+        return Promise.resolve({
+          items: [{
+            id: "c1", issueId: "iss-1", authorId: "u-1",
+            author: { id: "u-1", name: "Alice" },
+            body: "Hey @Bob Jones, check this",
+            createdAt: "2024-01-01T00:00:00Z",
+            mentions: [{ userId: "u-2", name: "Bob Jones" }],
+          }],
+        });
+      }
+      return Promise.resolve({ items: [] });
+    });
+    vi.mocked(api.getMembers).mockResolvedValue({ items: [{ userId: "u-2", name: "Bob Jones" }] });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={["/workspaces/ws-1/issues/iss-1"]}>
+        <Routes>
+          <Route path="/workspaces/:workspaceId/issues/:issueId" element={<IssuePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText(/Hey/);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

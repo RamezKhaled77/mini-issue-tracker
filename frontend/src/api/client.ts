@@ -65,6 +65,8 @@ export const api = {
       buildUrl("/search", { q, limit: options?.limit }),
       options?.signal ? { signal: options.signal } : undefined
     ),
+  getMembers: (workspaceId: string) =>
+    request<{ items: { userId: string; name: string }[] }>(`/workspaces/${workspaceId}/members`),
   /* Saved Views (Spec 009). */
   listSavedViews: (workspaceId: string) =>
     request<{ items: SavedView[] }>(`/workspaces/${workspaceId}/views`),
