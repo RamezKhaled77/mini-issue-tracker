@@ -152,3 +152,9 @@
 .form-alert {
   margin-bottom: var(--space-4);
 }
+
+/* Dedicated labels route — workbench layout without the project rail. */
+.labels-page {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+}

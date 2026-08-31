@@ -382,10 +382,12 @@ The sidebar is intentionally quiet. It contains only what the product really
 has:
 
 - Mini / Issue Tracker wordmark
-- `WORKSPACE` eyebrow
-- Workspaces navigation
-- `PERSONAL` eyebrow
-- My Issues navigation
+- `WorkspaceSwitcher` (current-workspace identity + real workspace list)
+- `WORKSPACE` eyebrow — Workspaces navigation, Search
+- `PERSONAL` eyebrow — My Issues navigation
+- **Contextual workspace nav** (`WORKSPACE` eyebrow, rendered only when the
+  route is inside a workspace): Issues → `/workspaces/:id`, Labels →
+  `/workspaces/:id/labels`
 - user identity
 - sign out
 
@@ -421,28 +423,51 @@ The wordmark is more visually important than the navigation.
   focus. Tooltip text repeats the existing accessible name; it adds no unique
   information. Tooltips are hover/fine-pointer only and are suppressed in the
   ≤700px mobile top bar.
+- The `WorkspaceSwitcher` sits directly below the wordmark and precedes the
+  `WORKSPACE` nav group. It collapses to a compact indicator in the ≤700px top
+  bar; its popover contract (Escape / focus-return / click-outside /
+  `aria-expanded`) is shared with the quick-edit popover family.
 
 Do not invent navigation items. Do not add fake `Recent`, `Current workspace`,
 fake project navigation, analytics, settings, or notifications unless the
 application actually gains those features. **Visual design must reflect real
 product data and real navigation.** `PERSONAL → My Issues` exists because the
-product genuinely aggregates the signed-in user's assigned issues.
+product genuinely aggregates the signed-in user's assigned issues. The
+contextual `WORKSPACE` nav exists only while a workspace route is active and
+lists only real, implemented workspace surfaces (Issues, Labels).
 
 ---
 
 ## 15. Workspace Selector
 
-The workspace selector feels like a **navigation ledger**:
+The workspace selector is now the **`WorkspaceSwitcher`** in the sidebar: a
+bordered trigger (`.workspace-switcher-trigger`) showing the current workspace
+name (or "Workspaces" when not in one), a small petrol initial indicator, and
+a caret. Activating it opens a paper popover listing the authorized
+`GET /workspaces` results, each with its Owner/Member neutral badge, plus an
+"All workspaces" entry linking to `/`.
 
-- ruled rows (hairline separators between them)
-- compact height
-- strong workspace name
-- Owner/Member as a quiet neutral badge
-- aligned trailing chevron
+- The list is **never** fabricated: it is exactly the authorized `/workspaces`
+  response (same call the Dashboard uses), so switching can never leak
+  inaccessible workspaces.
+- Current workspace carries `aria-current` and the petrol active treatment.
+- Popover = Escape closes / focus returns to trigger / click-outside closes /
+  `aria-expanded` on the trigger (shared with the quick-edit popover family).
+- Data freshness: the shell caches the list per session; the Dashboard
+  refreshes the cache after creating or joining a workspace.
 
 Avoid turning workspaces into large cards. Do not fabricate project counts,
 issue counts, activity, avatars, or statistics if the API does not provide
 them. **Data honesty is part of the visual language.**
+
+## 15a. Labels route
+
+Labels management lives on a dedicated route (`/workspaces/:id/labels`) via
+`LabelsPage` (spec 012 §7). It is the `LabelsSection` component rendered on the
+workbench layout without the project rail: a `PageHeader` (workspace name,
+mono `Workspace` eyebrow, back-link) above the ruled label list and color
+picker. The contextual workspace nav keeps Labels reachable from within a
+workspace.
 
 ---
 
@@ -456,7 +481,10 @@ The workspace page is the primary workbench. Its structure, top to bottom:
 4. Priority metadata line
 5. Projects rail
 6. Issues ledger
-7. Labels rail (management list + color picker)
+7. Invitations live behind an "Invite" button in the workspace masthead
+   (accessible only to the owner), and Labels management moved to the dedicated
+   `/workspaces/:id/labels` route — neither the manage list nor invitations
+   occupy the daily-workflow rail anymore.
 
 The page is **one connected working surface**. The statistics are a ruled strip
 attached to the page — **not** a large "Dashboard" card. There is no generic

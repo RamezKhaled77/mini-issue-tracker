@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import type { BulkIssueRequest, Label, MyIssuesResponse } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
@@ -29,6 +30,7 @@ import { labelTone } from "../lib/labelTone.js";
 import { applyMyIssuesView } from "../lib/myIssuesView.js";
 import type { MyIssuesSortKey } from "../lib/myIssuesView.js";
 import { toggle, selectVisible, partitionByWorkspace } from "../lib/bulkSelection.js";
+import { readFilters, writeFilters, MY_ISSUES_FILTER_KEYS } from "../lib/urlFilters.js";
 
 export function MyIssuesPage() {
   const [data, setData] = useState<MyIssuesResponse | null>(null);
@@ -40,6 +42,33 @@ export function MyIssuesPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlInitRef = useRef(false);
+
+  // URL-encoded filter state (spec 012 §10). Read once on mount, then project
+  // the client-side filter state onto the URL with replace.
+  useEffect(() => {
+    if (urlInitRef.current) return;
+    urlInitRef.current = true;
+    const filters = readFilters(searchParams, MY_ISSUES_FILTER_KEYS);
+    if (filters.q) setSearch(filters.q);
+    if (filters.status) setStatusFilter(filters.status);
+    if (filters.priority) setPriorityFilter(filters.priority);
+    if (filters.sort) setSort(filters.sort as MyIssuesSortKey);
+    if (filters.closed === "true") setIncludeClosed(true);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!urlInitRef.current) return;
+    const filters: Record<string, string | undefined> = {
+      q: search,
+      status: statusFilter,
+      priority: priorityFilter,
+      sort: sort === "default" ? undefined : sort,
+      closed: includeClosed ? "true" : undefined,
+    };
+    setSearchParams(writeFilters(filters, MY_ISSUES_FILTER_KEYS), { replace: true });
+  }, [search, statusFilter, priorityFilter, sort, includeClosed, setSearchParams]);
 
   // Bulk selection state (Spec 007). Cross-workspace selections are disabled.
   const [selected, setSelected] = useState<Set<string>>(new Set());

@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
+import type { Workspace } from "@mini-issue-tracker/shared";
 import { useAuth } from "../context/auth.js";
 import { Button } from "./Button.js";
 import { Avatar } from "./Avatar.js";
 import { SearchDialog } from "./SearchDialog.js";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog.js";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher.js";
 import { useKeyboardShortcuts } from "../lib/useKeyboardShortcuts.js";
+import { initWorkspaceCache } from "../lib/workspaceCache.js";
 import {
   IconBrand,
   IconSearch,
@@ -13,14 +16,24 @@ import {
   IconWorkspaces,
   IconHelp,
   IconSignout,
+  IconLabels,
 } from "./icons.js";
 
 export function Layout() {
   const { user, signout } = useAuth();
   const navigate = useNavigate();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [wsLoading, setWsLoading] = useState(true);
+
+  useEffect(() => {
+    initWorkspaceCache()
+      .then(setWorkspaces)
+      .finally(() => setWsLoading(false));
+  }, []);
 
   // Single source of truth for the shell's shortcuts (Spec 009, D-02/D-03):
   // `/` + Ctrl/Cmd+K are preserved verbatim; `?`, `G D`, `G M` are new. Guards
@@ -106,6 +119,11 @@ export function Layout() {
             <path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
+        <WorkspaceSwitcher
+          currentId={workspaceId}
+          workspaces={workspaces}
+          loading={wsLoading}
+        />
         <nav className="sidebar-nav" aria-label="Main">
           <span className="sidebar-eyebrow">Workspace</span>
           <NavLink
@@ -143,6 +161,32 @@ export function Layout() {
             <span className="sidebar-text">My Issues</span>
           </NavLink>
         </nav>
+        {workspaceId && (
+          <nav className="sidebar-nav sidebar-nav--contextual" aria-label="Workspace">
+            <span className="sidebar-eyebrow">Workspace</span>
+            <NavLink
+              to={`/workspaces/${workspaceId}`}
+              end
+              data-sidebar-tooltip="Issues"
+              className={({ isActive }) =>
+                isActive ? "sidebar-link sidebar-link--active" : "sidebar-link"
+              }
+            >
+              <IconIssue />
+              <span className="sidebar-text">Issues</span>
+            </NavLink>
+            <NavLink
+              to={`/workspaces/${workspaceId}/labels`}
+              data-sidebar-tooltip="Labels"
+              className={({ isActive }) =>
+                isActive ? "sidebar-link sidebar-link--active" : "sidebar-link"
+              }
+            >
+              <IconLabels />
+              <span className="sidebar-text">Labels</span>
+            </NavLink>
+          </nav>
+        )}
         <div className="sidebar-footer">
           {user && (
             <div className="sidebar-user">

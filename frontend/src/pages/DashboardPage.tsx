@@ -13,6 +13,7 @@ import { Field } from "../components/Field.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { LedgerList } from "../components/LedgerList.js";
 import { LedgerRow } from "../components/LedgerRow.js";
+import { refreshWorkspaceCache } from "../lib/workspaceCache.js";
 
 export function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -25,6 +26,7 @@ export function DashboardPage() {
   async function load() {
     const res = await api.get<{ items: Workspace[] }>("/workspaces");
     setWorkspaces(res.items);
+    void refreshWorkspaceCache();
   }
 
   useEffect(() => {

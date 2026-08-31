@@ -19,6 +19,13 @@
   margin-bottom: 0;
 }
 
+.workspace-masthead-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .page-alert {
   margin-bottom: var(--space-4);
 }

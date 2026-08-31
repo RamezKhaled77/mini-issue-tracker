@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import type {
   Issue,
@@ -14,7 +14,6 @@ import type {
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, SAVED_VIEW_FILTERS_VERSION } from "@mini-issue-tracker/shared";
 import { IssueForm } from "../components/IssueForm.js";
 import { Invitations } from "../components/Invitations.js";
-import { LabelsSection } from "../components/LabelsSection.js";
 import { SavedViewsSection } from "../components/SavedViewsSection.js";
 import { resolveSavedViewFilters } from "../lib/savedViewFilters.js";
 import { ProjectDialog } from "../components/ProjectDialog.js";
@@ -43,6 +42,7 @@ import type { QuickEditField, QuickEditState } from "../components/quickEdit.js"
 import { issueKey } from "../lib/issueKey.js";
 import { isOverdue } from "../lib/isOverdue.js";
 import { toggle, selectVisible } from "../lib/bulkSelection.js";
+import { readFilters, writeFilters, WORKSPACE_FILTER_KEYS } from "../lib/urlFilters.js";
 
 interface WorkspaceDetail {
   id: string;
@@ -80,6 +80,52 @@ export function WorkspacePage() {
   const [staleNote, setStaleNote] = useState<string | null>(null);
   const [saveSignal, setSaveSignal] = useState(0);
   const appliedSnapshotRef = useRef("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlInitRef = useRef(false);
+  const viewApplyRef = useRef(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+
+  // Read-once: initialize filter state from the URL (spec 012 §10). The text
+  // search stays local (workspace search is a tool input, not part of the
+  // addressable workspace filter schema).
+  useEffect(() => {
+    if (urlInitRef.current) return;
+    urlInitRef.current = true;
+    const filters = readFilters(searchParams, WORKSPACE_FILTER_KEYS);
+    if (filters.project) setSelectedProject(filters.project);
+    if (filters.status) setStatusFilter(filters.status);
+    if (filters.priority) setPriorityFilter(filters.priority);
+    if (filters.label) setLabelFilter(filters.label);
+  }, [searchParams]);
+
+  // Project the filter state onto the URL (replace: typing doesn't spam
+  // history). `view` is emitted only while a saved view is active; manual
+  // edits clear it via the staleness effect below.
+  useEffect(() => {
+    if (!urlInitRef.current) return;
+    const filters: Record<string, string | undefined> = {
+      project: selectedProject,
+      status: statusFilter,
+      priority: priorityFilter,
+      label: labelFilter,
+      view: activeViewId ?? undefined,
+    };
+    setSearchParams(writeFilters(filters, WORKSPACE_FILTER_KEYS), { replace: true });
+  }, [selectedProject, statusFilter, priorityFilter, labelFilter, activeViewId, setSearchParams]);
+
+  // Deep-link a saved `view` param: once projects/labels/views are loaded,
+  // resolve and apply it (guarded so it runs exactly once per mount).
+  useEffect(() => {
+    if (viewApplyRef.current) return;
+    if (viewsLoading || loading) return;
+    const viewId = readFilters(searchParams, WORKSPACE_FILTER_KEYS).view;
+    if (!viewId) return;
+    const target = views.find((v) => v.id === viewId);
+    if (target) {
+      viewApplyRef.current = true;
+      handleSelectView(target);
+    }
+  }, [views, viewsLoading, loading]);
 
   // Bulk selection state (Spec 007).
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -298,7 +344,27 @@ export function WorkspacePage() {
         <Link to="/" className="back-link">
           &larr; All workspaces
         </Link>
-        <h1 className="page-title">{workspace?.name ?? "Workspace"}</h1>
+        <div className="workspace-masthead-row">
+          <h1 className="page-title">{workspace?.name ?? "Workspace"}</h1>
+          {workspace?.isOwner && (
+            <Button type="button" variant="secondary" onClick={() => setInviteOpen(true)}>
+              Invite
+            </Button>
+          )}
+        </div>
+        <Dialog
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          title="Invite to workspace"
+          description="Share an invitation token with teammates to grant access."
+        >
+          <Invitations workspaceId={workspaceId!} isOwner={Boolean(workspace?.isOwner)} />
+          <div className="dialog-actions">
+            <Button type="button" variant="secondary" onClick={() => setInviteOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </Dialog>
       </div>
       {error && (
         <Alert role="alert" className="page-alert">
@@ -344,13 +410,6 @@ export function WorkspacePage() {
             loading={loading}
             onSelectProject={setSelectedProject}
             onProjectsChanged={handleProjectsChanged}
-          />
-          <Invitations workspaceId={workspaceId!} isOwner={Boolean(workspace?.isOwner)} />
-          <LabelsSection
-            workspaceId={workspaceId!}
-            labels={labels}
-            loading={loading}
-            onChange={loadLabels}
           />
           <SavedViewsSection
             workspaceId={workspaceId!}
