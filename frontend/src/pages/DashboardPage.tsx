@@ -11,6 +11,9 @@ import { EmptyState } from "../components/EmptyState.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { Field } from "../components/Field.js";
 
+import { PageHeader } from "../components/PageHeader.js";
+import { IconBrand } from "../components/icons.js";
+
 export function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [name, setName] = useState("");
@@ -48,12 +51,14 @@ export function DashboardPage() {
 
   return (
     <section>
-      <div className="page-header">
-        <h1 className="page-title">Workspaces</h1>
-        <Button variant="primary" onClick={() => setCreateOpen(true)}>
-          New workspace
-        </Button>
-      </div>
+      <PageHeader
+        title="Workspaces"
+        actions={
+          <Button variant="primary" onClick={() => setCreateOpen(true)}>
+            New workspace
+          </Button>
+        }
+      />
 
       {error && (
         <p className="alert alert--error" role="alert">
@@ -103,10 +108,7 @@ export function DashboardPage() {
             <li key={ws.id}>
               <Link to={`/workspaces/${ws.id}`} className="ledger-row">
                 <span className="app-brand-mark" aria-hidden="true">
-                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M4 5h8M4 8h8M4 11h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                  <IconBrand />
                 </span>
                 <span className="ledger-main">
                   <span className="ledger-title">{ws.name}</span>

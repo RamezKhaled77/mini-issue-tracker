@@ -1,0 +1,154 @@
+/* ============================================================================
+   Labels management
+   Consumes tokens from tokens.css. Split mechanically from components.css
+   (Workstream 1) — selectors copied verbatim, no visual change.
+   ========================================================================== */
+
+/* Labels management (workspace) — ruled ledger rows with color swatches. */
+.labels-panel {
+  margin-bottom: var(--space-4);
+}
+
+.label-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: var(--border-subtle);
+}
+
+.label-row:first-child {
+  border-top: none;
+}
+
+.label-swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-xs);
+  background: var(--color-border-strong);
+  flex-shrink: 0;
+}
+
+.label-swatch--violet {
+  background: var(--color-label-violet-text);
+}
+
+.label-swatch--magenta {
+  background: var(--color-label-magenta-text);
+}
+
+.label-swatch--indigo {
+  background: var(--color-label-indigo-text);
+}
+
+.label-swatch--olive {
+  background: var(--color-label-olive-text);
+}
+
+.label-swatch--sand {
+  background: var(--color-label-sand-text);
+}
+
+.label-swatch--plum {
+  background: var(--color-label-plum-text);
+}
+
+.label-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label-row-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Label color picker — radio swatches. */
+.color-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.color-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.25rem 0.625rem;
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.color-radio:has(input:checked) {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.color-radio input {
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.color-radio-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-xs);
+  background: var(--color-border-strong);
+  flex-shrink: 0;
+}
+
+.color-radio-swatch--violet {
+  background: var(--color-label-violet-text);
+}
+
+.color-radio-swatch--magenta {
+  background: var(--color-label-magenta-text);
+}
+
+.color-radio-swatch--indigo {
+  background: var(--color-label-indigo-text);
+}
+
+.color-radio-swatch--olive {
+  background: var(--color-label-olive-text);
+}
+
+.color-radio-swatch--sand {
+  background: var(--color-label-sand-text);
+}
+
+.color-radio-swatch--plum {
+  background: var(--color-label-plum-text);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--border-subtle);
+}
+
+.form-alert {
+  margin-bottom: var(--space-4);
+}

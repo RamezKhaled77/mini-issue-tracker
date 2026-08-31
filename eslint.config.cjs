@@ -66,6 +66,7 @@ module.exports = [
         DOMException: "readonly",
         requestAnimationFrame: "readonly",
         HTMLUListElement: "readonly",
+        SVGSVGElement: "readonly",
         MouseEvent: "readonly",
         Node: "readonly",
       },

@@ -1,0 +1,541 @@
+/* ============================================================================
+   Ledger — the ticket ledger signature, bulk selection, quick edit
+   Consumes tokens from tokens.css. Split mechanically from components.css
+   (Workstream 1) — selectors copied verbatim, no visual change.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Workspace selector — ledger
+   -------------------------------------------------------------------------- */
+.ledger-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ledger-list > li + li {
+  border-top: var(--border-subtle);
+}
+
+.ledger-list > li:hover {
+  border-top-color: var(--color-border-strong);
+}
+
+.ledger-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-height: 3.5rem;
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ledger-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.ledger-row:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+.ticket-key {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 3.75rem;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.ledger-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ledger-title {
+  font-size: var(--text-strong);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.ledger-subtitle {
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledger-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.ledger-more-labels {
+  font-size: var(--text-label);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+.ledger-chevron {
+  color: var(--color-text-faint);
+  opacity: 0.45;
+  transform: translateX(0);
+  flex-shrink: 0;
+  font-size: var(--text-strong);
+  line-height: 1;
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.ledger-row:hover .ledger-chevron {
+  opacity: 1;
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.ledger-row:hover .ticket-key {
+  color: var(--color-accent);
+}
+
+.ledger-row[data-priority="low"] {
+  --ledger-bar: var(--color-badge-low-text);
+}
+
+.ledger-row[data-priority="medium"] {
+  --ledger-bar: var(--color-badge-medium-text);
+}
+
+.ledger-row[data-priority="high"] {
+  --ledger-bar: var(--color-badge-high-text);
+}
+
+.ledger-row[data-priority="urgent"] {
+  --ledger-bar: var(--color-badge-urgent-text);
+}
+
+/* Overdue ledger rows — coral attention treatment remains inside the ledger. */
+.ledger-row[data-overdue="true"] {
+  background: var(--color-danger-bg);
+  box-shadow: inset 0 0 0 1px var(--color-danger-border);
+}
+
+.ledger-row[data-overdue="true"]:hover {
+  background: var(--color-danger-bg);
+  box-shadow: inset 0 0 0 1px var(--color-danger);
+}
+
+.ledger-row::before {
+  content: "";
+  width: 3px;
+  align-self: stretch;
+  background: var(--ledger-bar, transparent);
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.card-assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Cross-workspace ledger context caption (My Issues) */
+
+/* ---------------------------------------------------------------------------
+   Bulk actions (Spec 007) — selection layer over the ticket ledger.
+   Ruled bars in the same family as `.filter-bar`; native controls; existing
+   tokens only (petrol selected treatment, mono counts). No new colors/spacing.
+   -------------------------------------------------------------------------- */
+.bulk-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-1);
+  border-top: var(--border-subtle);
+  border-bottom: var(--border-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.bulk-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulk-select-all input[type="checkbox"],
+.ledger-select input[type="checkbox"],
+.bulk-toolbar input[type="checkbox"] {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  accent-color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.bulk-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bulk-note {
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+}
+
+/* Destructive intent inside the bulk toolbar (coral = danger only, §7). */
+.bulk-note--danger {
+  color: var(--color-danger);
+}
+
+.bulk-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2);
+  border-top: var(--border-subtle);
+  border-bottom: var(--border-subtle);
+  margin-bottom: var(--space-3);
+  background: var(--color-surface);
+}
+
+.bulk-toolbar .bulk-field {
+  flex: 1 1 12rem;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+
+.bulk-toolbar .bulk-labels {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.bulk-toolbar .bulk-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* Ledger row anatomy (Spec 007 selection layer + Spec 010 split row).
+   The navigation link (ticket-key + main) and the editable metadata run
+   (`.ledger-meta`) are siblings inside li.ledger-item; the row chrome —
+   surface, priority edge bar, overdue/selected treatment — lives on the
+   item so it spans the full row regardless of the link split. The chevron
+   is a trailing sibling of the link (decorative, aria-hidden) to keep the
+   resting visual order: key → main → meta → chevron. */
+.ledger-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  position: relative;
+  min-height: 3.5rem;
+  padding-right: var(--space-4);
+  background: var(--color-surface);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ledger-item::before {
+  content: "";
+  width: 3px;
+  align-self: stretch;
+  background: var(--ledger-bar, transparent);
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.ledger-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.ledger-item[data-priority="low"] {
+  --ledger-bar: var(--color-badge-low-text);
+}
+
+.ledger-item[data-priority="medium"] {
+  --ledger-bar: var(--color-badge-medium-text);
+}
+
+.ledger-item[data-priority="high"] {
+  --ledger-bar: var(--color-badge-high-text);
+}
+
+.ledger-item[data-priority="urgent"] {
+  --ledger-bar: var(--color-badge-urgent-text);
+}
+
+/* Overdue ledger rows — coral attention treatment remains inside the ledger. */
+.ledger-item[data-overdue="true"] {
+  background: var(--color-danger-bg);
+  box-shadow: inset 0 0 0 1px var(--color-danger-border);
+}
+
+.ledger-item[data-overdue="true"]:hover {
+  background: var(--color-danger-bg);
+  box-shadow: inset 0 0 0 1px var(--color-danger);
+}
+
+.ledger-item > .ledger-select {
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-4);
+  flex-shrink: 0;
+}
+
+.ledger-row-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+}
+
+.ledger-row-link:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+.ledger-item > .ledger-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.ledger-item > .ledger-chevron {
+  color: var(--color-text-faint);
+  opacity: 0.45;
+  transform: translateX(0);
+  flex-shrink: 0;
+  font-size: var(--text-strong);
+  line-height: 1;
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.ledger-item:hover .ticket-key,
+.ledger-item:focus-within .ticket-key {
+  color: var(--color-accent);
+}
+
+.ledger-item:hover .ledger-chevron {
+  opacity: 1;
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+/* Selected row treatment — petrol, additive to the ledger signature. */
+.ledger-item--selected {
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+.ledger-item--selected:hover {
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+/* ---------------------------------------------------------------------------
+   Quick Edit (Spec 010) — badge-styled inline editors in the ledger meta run.
+   Existing tokens only: badge tones for triggers, petrol for the open-state
+   ring, hairline borders for the anchored surface. No new colors/radii/shadows.
+   -------------------------------------------------------------------------- */
+.qe-trigger {
+  cursor: pointer;
+}
+
+.qe-trigger:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.qe-trigger--quiet {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
+}
+
+/* D-05 editable cue — a dotted underline in currentColor on row hover /
+   focus-within. Typography, not decoration; semantic badge colors unchanged. */
+.ledger-item:hover .qe-trigger:not(:disabled),
+.ledger-item:focus-within .qe-trigger:not(:disabled),
+.qe-trigger:hover:not(:disabled),
+.qe-trigger:focus-visible:not(:disabled) {
+  text-decoration: underline dotted currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.qe-select {
+  font-family: inherit;
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  max-width: 12rem;
+}
+
+.qe-popover {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: var(--space-4);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 16rem;
+  max-width: min(24rem, calc(100vw - 2rem));
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-subtle);
+}
+
+.qe-popover .label-picker {
+  justify-content: flex-start;
+}
+
+.qe-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  border-top: var(--border-subtle);
+  padding-top: var(--space-2);
+}
+
+.qe-date-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.qe-date-label {
+  font-size: var(--text-label);
+  color: var(--color-text-muted);
+}
+
+.qe-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--color-text-muted);
+  text-decoration: underline dotted currentColor;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.qe-clear:hover,
+.qe-clear:focus-visible {
+  color: var(--color-danger);
+}
+
+/* D-08 row-local error — full-width line under the row content. */
+.qe-row-alert {
+  flex-basis: 100%;
+  margin: 0 0 var(--space-2) var(--space-4);
+}
+
+@media (max-width: 700px) {
+  /* Popovers span the row width on narrow screens (spec §15). */
+  .qe-popover {
+    left: var(--space-4);
+    right: var(--space-4);
+    min-width: 0;
+  }
+}
+
+/* ≥44px targets on coarse pointers and narrow viewports (spec §15/§16). */
+@media (pointer: coarse), (max-width: 700px) {
+  .qe-trigger {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .qe-select {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 700px) {
+.ledger-row-link {
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* Search overlay rows keep their compact wrap behavior. */
+  .ledger-row {
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .ledger-item > .ledger-meta {
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 375px) {
+.bulk-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-toolbar .bulk-field {
+    min-width: 100%;
+  }
+
+  .bulk-toolbar .bulk-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

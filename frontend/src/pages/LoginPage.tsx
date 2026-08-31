@@ -7,6 +7,7 @@ import { FormAlert } from "../components/FormAlert.js";
 import { useFocusAlert } from "../components/useFocusAlert.js";
 import { Field } from "../components/Field.js";
 import { Button } from "../components/Button.js";
+import { IconBrand } from "../components/icons.js";
 
 export function LoginPage() {
   const { signin } = useAuth();
@@ -43,10 +44,7 @@ export function LoginPage() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <Link to="/login" className="auth-brand">
           <span className="app-brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M4 5h8M4 8h8M4 11h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <IconBrand />
           </span>
           <span className="app-brand-text">
             <span className="app-brand-name">Mini</span>

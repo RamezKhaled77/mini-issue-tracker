@@ -33,8 +33,19 @@ The approved visual direction is **already implemented**. In priority order:
 
 1. The currently implemented UI (`frontend/src`).
 2. `frontend/src/styles/tokens.css` — the single source of every design value.
-3. `frontend/src/styles/base.css` — reset, defaults, focus, reduced motion.
-4. `frontend/src/styles/components.css` — component and page anatomy.
+3. `frontend/src/styles/base.css` — reset, defaults, focus, reduced motion, global
+   coarse-pointer touch targets.
+4. The component CSS split (Workstream 1 of spec 012), imported via
+   `frontend/src/styles/index.css` in this cascade order:
+   - `layout.css` — app shell, sidebar/rail, page scaffolds, stat strip
+   - `controls.css` — buttons, avatar, badges, fields, control primitives, shared control patterns
+   - `ledger.css` — the ticket ledger signature, bulk selection layer, quick-edit row layer
+   - `overlays.css` — dialogs, search overlay, popovers, mention autocomplete, key-caps
+   - `pages/{dashboard,workspace,labels,my-issues,issue,auth}.css` — page-scoped composition
+   Media queries live in the file that owns the component; each breakpoint value
+   appears once per file. No raw hex outside `tokens.css`. Class-prefix ownership:
+   `app-*`/`sidebar-*` (layout), `btn`/`badge`/`avatar`/`field`/`input`/`select`
+   (controls), `ledger-*`/`qe-*`/`bulk-*` (ledger), `fact-*` (issue page).
 5. Existing React components and pages.
 6. Reference screenshots under `inspiration & references/`.
 
@@ -1086,6 +1097,11 @@ Future styling should prefer existing CSS variables from `tokens.css`.
   represent the requirement.
 - Components reference **roles**, never raw values — this is what makes Dark
   Mode a future role-remap only.
+- Raw values live only in `tokens.css` (and inline SVG data URIs used for
+  control glyphs). Component CSS files reference tokens exclusively.
+- New shared primitives own their classes in a named CSS file:
+  `Input`/`Select`/`Textarea`/`Checkbox` → `controls.css`;
+  `PageHeader` → `layout.css`; `LedgerRow`/`LedgerList` → `ledger.css`.
 
 ---
 

@@ -86,3 +86,30 @@ a {
     scroll-behavior: auto !important;
   }
 }
+/* Touch targets: ensure 44px minimum on coarse pointers (global). */
+@media (pointer: coarse) {
+  .btn,
+  .sidebar-toggle,
+  .label-chip,
+  .color-radio,
+  .card-main,
+  .field input,
+  .field select,
+  .field textarea,
+  .include-closed,
+  .bulk-select-all,
+  .bulk-toolbar .bulk-field select,
+  .bulk-toolbar .btn,
+  .ledger-select {
+    min-height: 44px;
+  }
+
+  .ledger-select {
+    align-items: center;
+  }
+
+  .card-actions .btn {
+    min-height: 44px;
+    padding: 0.5rem 0.625rem;
+  }
+}

@@ -7,7 +7,9 @@ import { DashboardPage } from "./pages/DashboardPage.js";
 import { WorkspacePage } from "./pages/WorkspacePage.js";
 import { IssuePage } from "./pages/IssuePage.js";
 import { MyIssuesPage } from "./pages/MyIssuesPage.js";
+import { NotFoundPage } from "./pages/NotFoundPage.js";
 import { Layout } from "./components/Layout.js";
+import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { SkeletonRows } from "./components/Skeleton.js";
 
 function Protected({ children }: { children: ReactNode }) {
@@ -19,22 +21,25 @@ function Protected({ children }: { children: ReactNode }) {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route
-        path="/"
-        element={
-          <Protected>
-            <Layout />
-          </Protected>
-        }
-      >
-        <Route index element={<DashboardPage />} />
-        <Route path="my-issues" element={<MyIssuesPage />} />
-        <Route path="workspaces/:workspaceId" element={<WorkspacePage />} />
-        <Route path="workspaces/:workspaceId/issues/:issueId" element={<IssuePage />} />
-      </Route>
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/"
+          element={
+            <Protected>
+              <Layout />
+            </Protected>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="my-issues" element={<MyIssuesPage />} />
+          <Route path="workspaces/:workspaceId" element={<WorkspacePage />} />
+          <Route path="workspaces/:workspaceId/issues/:issueId" element={<IssuePage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </ErrorBoundary>
   );
 }

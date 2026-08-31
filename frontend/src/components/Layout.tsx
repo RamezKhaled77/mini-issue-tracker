@@ -6,6 +6,14 @@ import { Avatar } from "./Avatar.js";
 import { SearchDialog } from "./SearchDialog.js";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog.js";
 import { useKeyboardShortcuts } from "../lib/useKeyboardShortcuts.js";
+import {
+  IconBrand,
+  IconSearch,
+  IconIssue,
+  IconWorkspaces,
+  IconHelp,
+  IconSignout,
+} from "./icons.js";
 
 export function Layout() {
   const { user, signout } = useAuth();
@@ -77,10 +85,7 @@ export function Layout() {
       <aside className={`app-sidebar${sidebarCollapsed ? " app-sidebar--collapsed" : ""}`} id="app-sidebar">
         <Link to="/" className="app-brand" data-sidebar-tooltip="Mini Issue Tracker">
           <span className="app-brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M4 5h8M4 8h8M4 11h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <IconBrand />
           </span>
           <span className="app-brand-text">
             <span className="app-brand-name">Mini</span>
@@ -111,10 +116,7 @@ export function Layout() {
               isActive ? "sidebar-link sidebar-link--active" : "sidebar-link"
             }
           >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M4 4h8M4 7h8M4 10h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <IconWorkspaces />
             <span className="sidebar-text">Workspaces</span>
           </NavLink>
           <button
@@ -124,10 +126,7 @@ export function Layout() {
             className="sidebar-link"
             aria-label="Search issues"
           >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <IconSearch />
             <span className="sidebar-text">Search</span>
           </button>
         </nav>
@@ -140,9 +139,7 @@ export function Layout() {
               isActive ? "sidebar-link sidebar-link--active" : "sidebar-link"
             }
           >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M3 2.5h10v11H3zM3 6h10M6.5 9.5h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <IconIssue />
             <span className="sidebar-text">My Issues</span>
           </NavLink>
         </nav>
@@ -165,10 +162,7 @@ export function Layout() {
             title="Keyboard shortcuts"
             data-sidebar-tooltip="Keyboard shortcuts (?)"
           >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M6.2 6a1.8 1.8 0 1 1 2.6 1.6c-.8.5-.8 1-.8 1.9M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <IconHelp />
             <span className="sidebar-signout-text">Keyboard shortcuts</span>
           </Button>
           <Button
@@ -179,9 +173,7 @@ export function Layout() {
             aria-label="Sign out"
             data-sidebar-tooltip="Sign out"
           >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M6 3H3.5v10H6M10.5 5.5 13 8l-2.5 2.5M13 8H7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <IconSignout />
             <span className="sidebar-signout-text">Sign out</span>
           </Button>
         </div>

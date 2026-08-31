@@ -1,0 +1,56 @@
+/* ============================================================================
+   Dashboard (workspace list)
+   Consumes tokens from tokens.css. Split mechanically from components.css
+   (Workstream 1) — selectors copied verbatim, no visual change.
+   ========================================================================== */
+
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.dashboard-ledger {
+  max-width: 720px;
+}
+
+.dashboard-join {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--border-subtle);
+  max-width: 720px;
+}
+
+.dashboard-join h2 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.dashboard-join .inline-form {
+  margin-bottom: 0;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--leading-tight);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.back-link:hover {
+  color: var(--color-accent);
+}
