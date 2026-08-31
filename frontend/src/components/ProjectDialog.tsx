@@ -4,9 +4,11 @@ import { api } from "../api/client.js";
 import type { Project } from "@mini-issue-tracker/shared";
 import { Alert } from "./Alert.js";
 import { Button } from "./Button.js";
+import { ConfirmDialog } from "./ConfirmDialog.js";
 import { Dialog } from "./Dialog.js";
 import { EmptyState } from "./EmptyState.js";
 import { Field } from "./Field.js";
+import { Input } from "./Input.js";
 import { SkeletonRows } from "./Skeleton.js";
 
 export interface ProjectDialogProps {
@@ -101,15 +103,15 @@ export function ProjectDialog({
         description="Create a project inside this workspace."
       >
         <form className="dialog-form" onSubmit={handleCreateProject}>
-          <Field label="Project name">
-            <input
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="New project name"
-              autoFocus
-              required
-            />
-          </Field>
+<Field label="Project name">
+             <Input
+               value={projectName}
+               onChange={(e) => setProjectName(e.target.value)}
+               placeholder="New project name"
+               autoFocus
+               required
+             />
+           </Field>
           <div className="dialog-actions">
             <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>
               Cancel
@@ -128,14 +130,14 @@ export function ProjectDialog({
         description="Change the name of this project."
       >
         <form className="dialog-form" onSubmit={handleRenameProject}>
-          <Field label="Project name">
-            <input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              autoFocus
-              required
-            />
-          </Field>
+<Field label="Project name">
+             <Input
+               value={renameValue}
+               onChange={(e) => setRenameValue(e.target.value)}
+               autoFocus
+               required
+             />
+           </Field>
           <div className="dialog-actions">
             <Button type="button" variant="secondary" onClick={() => setRenamingProject(null)}>
               Cancel
@@ -147,21 +149,14 @@ export function ProjectDialog({
         </form>
       </Dialog>
 
-      <Dialog
-        open={Boolean(deletingProject)}
-        onClose={() => setDeletingProject(null)}
-        title="Delete project"
-        description={`Delete "${deletingProject?.name ?? ""}" and all its issues? This cannot be undone.`}
-      >
-        <div className="dialog-actions">
-          <Button type="button" variant="secondary" onClick={() => setDeletingProject(null)}>
-            Cancel
-          </Button>
-          <Button type="button" variant="danger" onClick={handleDeleteProject}>
-            Delete project
-          </Button>
-        </div>
-      </Dialog>
+<ConfirmDialog
+         open={Boolean(deletingProject)}
+         onClose={() => setDeletingProject(null)}
+         title="Delete project"
+         description={`Delete "${deletingProject?.name ?? ""}" and all its issues? This cannot be undone.`}
+         confirmLabel="Delete project"
+         onConfirm={handleDeleteProject}
+       />
 
       {loading ? (
         <SkeletonRows rows={3} />

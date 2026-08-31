@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 interface PageHeaderProps {
   backTo?: { to: string; label: string };
   title: ReactNode;
-  eyebrow?: string;
+  eyebrow?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
   id?: string;

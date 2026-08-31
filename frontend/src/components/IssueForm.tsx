@@ -6,6 +6,9 @@ import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Alert } from "./Alert.js";
 import { Button } from "./Button.js";
 import { Field } from "./Field.js";
+import { Input } from "./Input.js";
+import { Select } from "./Select.js";
+import { Textarea } from "./Textarea.js";
 
 export interface IssueFormData {
   title: string;
@@ -101,47 +104,47 @@ export function IssueForm({ workspaceId, projectId, onSubmit, onCancel, initial 
           {error}
         </Alert>
       )}
-      <Field label="Title" error={fieldErrors.title}>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-      </Field>
-      <Field label="Description" error={fieldErrors.description}>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-      </Field>
+<Field label="Title" error={fieldErrors.title}>
+         <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
+       </Field>
+<Field label="Description" error={fieldErrors.description}>
+         <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+       </Field>
       <div className="field-row">
-        <Field label="Status" error={fieldErrors.status}>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {ISSUE_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Priority" error={fieldErrors.priority}>
-          <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-            {ISSUE_PRIORITIES.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Due date" error={fieldErrors.dueDate}>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        </Field>
+<Field label="Status" error={fieldErrors.status}>
+         <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+             {ISSUE_STATUSES.map((s) => (
+               <option key={s} value={s}>
+                 {s}
+               </option>
+             ))}
+           </Select>
+       </Field>
+<Field label="Priority" error={fieldErrors.priority}>
+         <Select value={priority} onChange={(e) => setPriority(e.target.value)}>
+             {ISSUE_PRIORITIES.map((p) => (
+               <option key={p} value={p}>
+                 {p}
+               </option>
+             ))}
+           </Select>
+       </Field>
+<Field label="Due date" error={fieldErrors.dueDate}>
+         <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+       </Field>
       </div>
-      {members.length > 0 && (
-        <Field label="Assignee" error={fieldErrors.assigneeId}>
-          <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
-            <option value="">Unassigned</option>
-            {members.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      )}
+{members.length > 0 && (
+         <Field label="Assignee" error={fieldErrors.assigneeId}>
+           <Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+             <option value="">Unassigned</option>
+             {members.map((m) => (
+               <option key={m.userId} value={m.userId}>
+                 {m.name}
+               </option>
+             ))}
+           </Select>
+         </Field>
+       )}
       {labels.length > 0 && (
         <div className="field">
           <span className="field-label">Labels</span>

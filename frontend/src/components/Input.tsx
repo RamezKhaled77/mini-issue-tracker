@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes } from "react";
+import { forwardRef } from "react";
 
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   invalid?: boolean;
@@ -6,9 +7,11 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size">
   size?: "default" | "compact";
 }
 
-export function Input({ invalid = false, size = "default", className = "", ...props }: InputProps) {
-  const classes = ["input", size === "compact" ? "input--compact" : "", className]
-    .filter(Boolean)
-    .join(" ");
-  return <input className={classes} aria-invalid={invalid || undefined} {...props} />;
-}
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ invalid = false, size = "default", className = "", ...props }, ref) => {
+    const classes = ["input", size === "compact" ? "input--compact" : "", className]
+      .filter(Boolean)
+      .join(" ");
+    return <input ref={ref} className={classes} aria-invalid={invalid || undefined} {...props} />;
+  }
+);

@@ -2,8 +2,9 @@ import { useState } from "react";
 import type { BulkIssueAction, BulkIssueRequest, IssuePriority, IssueStatus, Label } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
 import { Button } from "./Button.js";
-import { Dialog } from "./Dialog.js";
+import { ConfirmDialog } from "./ConfirmDialog.js";
 import { Field } from "./Field.js";
+import { Select } from "./Select.js";
 
 export interface BulkMember {
   userId: string;
@@ -85,63 +86,63 @@ export function BulkToolbar({
 
       {!disabled && (
         <>
-          <Field label="Action" srOnlyLabel className="bulk-field">
-            <select
-              value={action}
-              onChange={(e) => {
-                setAction(e.target.value as BulkIssueAction);
-                setLabelIds([]);
-              }}
-              disabled={applying}
-            >
-              <option value="setStatus">Set status</option>
-              <option value="setPriority">Set priority</option>
-              <option value="assign">Assign to</option>
-              <option value="addLabels">Add label</option>
-              <option value="removeLabels">Remove label</option>
-              <option value="delete">Delete</option>
-            </select>
-          </Field>
+<Field label="Action" srOnlyLabel className="bulk-field">
+             <Select
+               value={action}
+               onChange={(e) => {
+                 setAction(e.target.value as BulkIssueAction);
+                 setLabelIds([]);
+               }}
+               disabled={applying}
+             >
+               <option value="setStatus">Set status</option>
+               <option value="setPriority">Set priority</option>
+               <option value="assign">Assign to</option>
+               <option value="addLabels">Add label</option>
+               <option value="removeLabels">Remove label</option>
+               <option value="delete">Delete</option>
+             </Select>
+           </Field>
 
           {action === "delete" && (
             <span className="bulk-note bulk-note--danger">Deleting cannot be undone.</span>
           )}
 
           {action === "setStatus" && (
-            <Field label="Status" srOnlyLabel className="bulk-field">
-              <select value={statusValue} onChange={(e) => setStatusValue(e.target.value as IssueStatus)} disabled={applying}>
-                {ISSUE_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </Field>
+<Field label="Status" srOnlyLabel className="bulk-field">
+               <Select value={statusValue} onChange={(e) => setStatusValue(e.target.value as IssueStatus)} disabled={applying}>
+                 {ISSUE_STATUSES.map((s) => (
+                   <option key={s} value={s}>
+                     {s}
+                   </option>
+                 ))}
+               </Select>
+             </Field>
           )}
 
           {action === "setPriority" && (
-            <Field label="Priority" srOnlyLabel className="bulk-field">
-              <select value={priorityValue} onChange={(e) => setPriorityValue(e.target.value as IssuePriority)} disabled={applying}>
-                {ISSUE_PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
+<Field label="Priority" srOnlyLabel className="bulk-field">
+               <Select value={priorityValue} onChange={(e) => setPriorityValue(e.target.value as IssuePriority)} disabled={applying}>
+                 {ISSUE_PRIORITIES.map((p) => (
+                   <option key={p} value={p}>
+                     {p}
+                   </option>
+                 ))}
+               </Select>
+             </Field>
           )}
 
           {action === "assign" && (
-            <Field label="Assignee" srOnlyLabel className="bulk-field">
-              <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={applying}>
-                <option value="">Unassigned</option>
-                {members.map((m) => (
-                  <option key={m.userId} value={m.userId}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+<Field label="Assignee" srOnlyLabel className="bulk-field">
+               <Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={applying}>
+                 <option value="">Unassigned</option>
+                 {members.map((m) => (
+                   <option key={m.userId} value={m.userId}>
+                     {m.name}
+                   </option>
+                 ))}
+               </Select>
+             </Field>
           )}
 
           {(action === "addLabels" || action === "removeLabels") && labels.length > 0 && (
@@ -174,29 +175,19 @@ export function BulkToolbar({
         </Button>
       </div>
 
-      <Dialog
-        open={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        title={`Delete ${selectedCount} ${selectedCount === 1 ? "issue" : "issues"}?`}
-        description="This permanently removes the selected issues. This cannot be undone."
-      >
-        <div className="form-actions">
-          <Button type="button" variant="ghost" onClick={() => setConfirmDelete(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            disabled={applying}
-            onClick={() => {
-              onApply({ issueIds: selectedIds, action: "delete" });
-              setConfirmDelete(false);
-            }}
-          >
-            {applying ? "Deleting…" : "Delete"}
-          </Button>
-        </div>
-      </Dialog>
+<ConfirmDialog
+         open={confirmDelete}
+         onClose={() => setConfirmDelete(false)}
+         title={`Delete ${selectedCount} ${selectedCount === 1 ? "issue" : "issues"}?`}
+         description="This permanently removes the selected issues. This cannot be undone."
+         confirmLabel="Delete"
+         busy={applying}
+         busyLabel="Deleting…"
+         onConfirm={() => {
+           onApply({ issueIds: selectedIds, action: "delete" });
+           setConfirmDelete(false);
+         }}
+       />
     </div>
   );
 }

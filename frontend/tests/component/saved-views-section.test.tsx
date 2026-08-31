@@ -40,7 +40,6 @@ function renderSection(views: SavedView[], props: Record<string, unknown> = {}) 
       labels={labels}
       loading={false}
       activeViewId={null}
-      saveSignal={0}
       getFilters={() => ({ version: 1, projectId: "proj-1" })}
       onSelect={vi.fn()}
       onChange={async () => {}}
@@ -96,8 +95,9 @@ describe("SavedViewsSection", () => {
       view: view({ id: "view-2", name: "New view" }),
     });
     const onChange = vi.fn(async () => {});
-    renderSection([view()], { onChange, saveSignal: 1 });
+    renderSection([view()], { onChange });
 
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
     const input = await screen.findByLabelText("View name");
     fireEvent.change(input, { target: { value: "New view" } });
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save view" }));
@@ -115,8 +115,9 @@ describe("SavedViewsSection", () => {
     vi.mocked(api.createSavedView).mockRejectedValueOnce(
       new Error("A view with this name already exists")
     );
-    renderSection([view()], { saveSignal: 1 });
+    renderSection([view()]);
 
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
     await screen.findByLabelText("View name");
     fireEvent.change(screen.getByLabelText("View name"), {
       target: { value: "My high priority" },
@@ -125,6 +126,23 @@ describe("SavedViewsSection", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("A view with this name already exists");
+  });
+
+  it("disables the Save view trigger when no project is resolvable", () => {
+    render(
+      <SavedViewsSection
+        workspaceId="ws-1"
+        views={[]}
+        projects={projects}
+        labels={labels}
+        loading={false}
+        activeViewId={null}
+        getFilters={() => ({ version: 1 })}
+        onSelect={vi.fn()}
+        onChange={async () => {}}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Save view" })).toBeDisabled();
   });
 
   it("renames a view", async () => {

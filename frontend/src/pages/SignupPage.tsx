@@ -6,6 +6,7 @@ import { ApiError } from "../api/client.js";
 import { FormAlert } from "../components/FormAlert.js";
 import { useFocusAlert } from "../components/useFocusAlert.js";
 import { Field } from "../components/Field.js";
+import { Input } from "../components/Input.js";
 import { Button } from "../components/Button.js";
 import { IconBrand } from "../components/icons.js";
 
@@ -66,51 +67,51 @@ export function SignupPage() {
         <h1 className="auth-title">Create account</h1>
         <p className="auth-subtitle">Create an account to start tracking issues.</p>
         <FormAlert id="auth-error" alert={alert} alertRef={alertRef} />
-        <Field label="Full name">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoComplete="name"
-            autoFocus
-            required
-            aria-invalid={nameInvalid || undefined}
-            aria-describedby={nameInvalid ? "auth-error" : undefined}
-          />
-        </Field>
-        <Field label="Email">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            required
-            aria-invalid={emailInvalid || undefined}
-            aria-describedby={emailInvalid ? "auth-error" : undefined}
-          />
-        </Field>
-        <Field label="Password">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            required
-            aria-invalid={passwordInvalid || undefined}
-            aria-describedby={passwordInvalid ? "auth-error" : undefined}
-          />
-        </Field>
-        <Field label="Confirm password">
-          <input
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            autoComplete="new-password"
-            required
-            aria-invalid={confirmInvalid || undefined}
-            aria-describedby={confirmInvalid ? "auth-error" : undefined}
-          />
-        </Field>
+<Field label="Full name">
+           <Input
+             type="text"
+             value={name}
+             onChange={(e) => setName(e.target.value)}
+             autoComplete="name"
+             autoFocus
+             required
+             aria-invalid={nameInvalid || undefined}
+             aria-describedby={nameInvalid ? "auth-error" : undefined}
+           />
+         </Field>
+<Field label="Email">
+           <Input
+             type="email"
+             value={email}
+             onChange={(e) => setEmail(e.target.value)}
+             autoComplete="email"
+             required
+             aria-invalid={emailInvalid || undefined}
+             aria-describedby={emailInvalid ? "auth-error" : undefined}
+           />
+         </Field>
+<Field label="Password">
+           <Input
+             type="password"
+             value={password}
+             onChange={(e) => setPassword(e.target.value)}
+             autoComplete="new-password"
+             required
+             aria-invalid={passwordInvalid || undefined}
+             aria-describedby={passwordInvalid ? "auth-error" : undefined}
+           />
+         </Field>
+<Field label="Confirm password">
+           <Input
+             type="password"
+             value={confirm}
+             onChange={(e) => setConfirm(e.target.value)}
+             autoComplete="new-password"
+             required
+             aria-invalid={confirmInvalid || undefined}
+             aria-describedby={confirmInvalid ? "auth-error" : undefined}
+           />
+         </Field>
         <Button type="submit" variant="primary" block disabled={submitting}>
           {submitting ? "Creating account..." : "Sign up"}
         </Button>

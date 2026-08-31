@@ -9,6 +9,8 @@ import { Button } from "../../src/components/Button.js";
 import { Badge } from "../../src/components/Badge.js";
 import { Field } from "../../src/components/Field.js";
 import { Dialog } from "../../src/components/Dialog.js";
+import { FactRail } from "../../src/components/FactRail.js";
+import { ConfirmDialog } from "../../src/components/ConfirmDialog.js";
 import { AuthProvider } from "../../src/context/auth.js";
 import { Layout } from "../../src/components/Layout.js";
 import { DashboardPage } from "../../src/pages/DashboardPage.js";
@@ -185,6 +187,33 @@ it("login page has no axe violations", async () => {
         <Button variant="secondary">Cancel</Button>
         <Button variant="danger">Delete</Button>
       </Dialog>
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("FactRail has no axe violations (Spec 012 WS5)", async () => {
+    const { container } = render(
+      <FactRail
+        items={[
+          { id: "status", label: "Status", value: <select aria-label="Status"><option>Open</option></select> },
+          { id: "priority", label: "Priority", value: <select aria-label="Priority"><option>High</option></select> },
+          { id: "assignee", label: "Assignee", value: "Unassigned" },
+        ]}
+      />
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("ConfirmDialog has no axe violations (Spec 012 WS5)", async () => {
+    const { container } = render(
+      <ConfirmDialog
+        open
+        onClose={vi.fn()}
+        title="Delete issue"
+        description="Delete this issue and all its comments? This cannot be undone."
+        confirmLabel="Delete issue confirmation"
+        onConfirm={vi.fn()}
+      />
     );
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -761,7 +790,6 @@ describe("saved views accessibility", () => {
         labels={[]}
         loading={false}
         activeViewId="view-1"
-        saveSignal={0}
         getFilters={() => ({ version: 1, projectId: "proj-1" })}
         onSelect={() => {}}
         onChange={async () => {}}
@@ -783,12 +811,12 @@ describe("saved views accessibility", () => {
         labels={[]}
         loading={false}
         activeViewId={null}
-        saveSignal={1}
         getFilters={() => ({ version: 1, projectId: "proj-1" })}
         onSelect={() => {}}
         onChange={async () => {}}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
     await screen.findByRole("dialog");
     expect(await axe(container)).toHaveNoViolations();
   });

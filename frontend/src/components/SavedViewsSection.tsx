@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api/client.js";
 import type { Label, Project, SavedView } from "@mini-issue-tracker/shared";
 import { Alert } from "./Alert.js";
 import { Button } from "./Button.js";
+import { ConfirmDialog } from "./ConfirmDialog.js";
 import { Dialog } from "./Dialog.js";
 import { EmptyState } from "./EmptyState.js";
 import { Field } from "./Field.js";
+import { Input } from "./Input.js";
 import { SkeletonRows } from "./Skeleton.js";
 import { resolveSavedViewFilters, savedViewAvailabilityNote } from "../lib/savedViewFilters.js";
 
@@ -17,11 +19,6 @@ export interface SavedViewsSectionProps {
   labels: Label[];
   loading: boolean;
   activeViewId: string | null;
-  /**
-   * Incremented by the page's "Save view" affordance to open the create
-   * dialog here (the section owns all Saved View dialogs).
-   */
-  saveSignal: number;
   /** Current ledger filters, captured when a new view is saved. */
   getFilters: () => unknown;
   onSelect: (view: SavedView) => void;
@@ -35,7 +32,6 @@ export function SavedViewsSection({
   labels,
   loading,
   activeViewId,
-  saveSignal,
   getFilters,
   onSelect,
   onChange,
@@ -47,13 +43,10 @@ export function SavedViewsSection({
   const [deleting, setDeleting] = useState<SavedView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (saveSignal > 0) {
-      setCreateName("");
-      setError(null);
-      setCreateOpen(true);
-    }
-  }, [saveSignal]);
+  // "Save view" is owned by this section (no cross-component signal). It is
+  // gated on a resolvable project so a project-less snapshot can't be created,
+  // preserving the workspace page's former `!selectedProject` enable rule.
+  const canSave = Boolean((getFilters() as { projectId?: string }).projectId);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -108,6 +101,9 @@ export function SavedViewsSection({
     <div className="saved-views-panel">
       <div className="section-header">
         <h2 className="section-title">Saved views</h2>
+        <Button type="button" variant="ghost" onClick={() => setCreateOpen(true)} disabled={!canSave}>
+          Save view
+        </Button>
       </div>
 
       <Dialog
@@ -118,16 +114,16 @@ export function SavedViewsSection({
       >
         <form className="dialog-form" onSubmit={handleCreate}>
           {error && <Alert role="alert">{error}</Alert>}
-          <Field label="View name">
-            <input
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              placeholder="e.g. My high priority"
-              autoFocus
-              required
-              maxLength={60}
-            />
-          </Field>
+<Field label="View name">
+             <Input
+               value={createName}
+               onChange={(e) => setCreateName(e.target.value)}
+               placeholder="e.g. My high priority"
+               autoFocus
+               required
+               maxLength={60}
+             />
+           </Field>
           <div className="dialog-actions">
             <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>
               Cancel
@@ -147,15 +143,15 @@ export function SavedViewsSection({
       >
         <form className="dialog-form" onSubmit={handleEdit}>
           {error && <Alert role="alert">{error}</Alert>}
-          <Field label="View name">
-            <input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              autoFocus
-              required
-              maxLength={60}
-            />
-          </Field>
+<Field label="View name">
+             <Input
+               value={editName}
+               onChange={(e) => setEditName(e.target.value)}
+               autoFocus
+               required
+               maxLength={60}
+             />
+           </Field>
           <div className="dialog-actions">
             <Button type="button" variant="secondary" onClick={() => setEditing(null)}>
               Cancel
@@ -167,28 +163,21 @@ export function SavedViewsSection({
         </form>
       </Dialog>
 
-      <Dialog
-        open={Boolean(deleting)}
-        onClose={() => setDeleting(null)}
-        title="Delete view"
-        description={`Delete "${deleting?.name ?? ""}"? Issues are not affected.`}
-      >
-        <div className="dialog-actions">
-          <Button type="button" variant="secondary" onClick={() => setDeleting(null)}>
-            Cancel
-          </Button>
-          <Button type="button" variant="danger" onClick={handleDelete}>
-            Delete view
-          </Button>
-        </div>
-      </Dialog>
+<ConfirmDialog
+         open={Boolean(deleting)}
+         onClose={() => setDeleting(null)}
+         title="Delete view"
+         description={`Delete "${deleting?.name ?? ""}"? Issues are not affected.`}
+         confirmLabel="Delete view"
+         onConfirm={handleDelete}
+       />
 
       {loading ? (
         <SkeletonRows rows={2} />
       ) : views.length === 0 ? (
         <EmptyState
           title="No saved views yet"
-          description="Save the current filters from the issue toolbar to reuse them later."
+          description="Save the current filters to reuse them later."
         />
       ) : (
         <ul className="view-list">

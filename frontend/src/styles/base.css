@@ -100,7 +100,8 @@ a {
   .bulk-select-all,
   .bulk-toolbar .bulk-field select,
   .bulk-toolbar .btn,
-  .ledger-select {
+  .ledger-select,
+  .filter-bar-toggle {
     min-height: 44px;
   }
 

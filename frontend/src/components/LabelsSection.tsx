@@ -6,9 +6,11 @@ import { LABEL_COLORS } from "@mini-issue-tracker/shared";
 import type { LabelColor } from "@mini-issue-tracker/shared";
 import { Alert } from "./Alert.js";
 import { Button } from "./Button.js";
+import { ConfirmDialog } from "./ConfirmDialog.js";
 import { Dialog } from "./Dialog.js";
 import { EmptyState } from "./EmptyState.js";
 import { Field } from "./Field.js";
+import { Input } from "./Input.js";
 import { SkeletonRows } from "./Skeleton.js";
 
 export interface LabelsSectionProps {
@@ -112,15 +114,15 @@ export function LabelsSection({ workspaceId, labels, loading, onChange }: Labels
         description="Create a label for issues in this workspace."
       >
         <form className="dialog-form" onSubmit={handleCreate}>
-          <Field label="Label name">
-            <input
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              placeholder="e.g. bug, backend, design"
-              autoFocus
-              required
-            />
-          </Field>
+<Field label="Label name">
+             <Input
+               value={createName}
+               onChange={(e) => setCreateName(e.target.value)}
+               placeholder="e.g. bug, backend, design"
+               autoFocus
+               required
+             />
+           </Field>
           <Field label="Label color">
             <div className="color-radios">{colorRadios("label-color-create", createColor, setCreateColor)}</div>
           </Field>
@@ -142,14 +144,14 @@ export function LabelsSection({ workspaceId, labels, loading, onChange }: Labels
         description="Change this label's name or color."
       >
         <form className="dialog-form" onSubmit={handleEdit}>
-          <Field label="Label name">
-            <input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              autoFocus
-              required
-            />
-          </Field>
+<Field label="Label name">
+             <Input
+               value={editName}
+               onChange={(e) => setEditName(e.target.value)}
+               autoFocus
+               required
+             />
+           </Field>
           <Field label="Label color">
             <div className="color-radios">{colorRadios("label-color-edit", editColor, setEditColor)}</div>
           </Field>
@@ -164,21 +166,14 @@ export function LabelsSection({ workspaceId, labels, loading, onChange }: Labels
         </form>
       </Dialog>
 
-      <Dialog
-        open={Boolean(deleting)}
-        onClose={() => setDeleting(null)}
-        title="Delete label"
-        description={`Delete "${deleting?.name ?? ""}"? Issues will keep their content but lose this label.`}
-      >
-        <div className="dialog-actions">
-          <Button type="button" variant="secondary" onClick={() => setDeleting(null)}>
-            Cancel
-          </Button>
-          <Button type="button" variant="danger" onClick={handleDelete}>
-            Delete label
-          </Button>
-        </div>
-      </Dialog>
+<ConfirmDialog
+         open={Boolean(deleting)}
+         onClose={() => setDeleting(null)}
+         title="Delete label"
+         description={`Delete "${deleting?.name ?? ""}"? Issues will keep their content but lose this label.`}
+         confirmLabel="Delete label"
+         onConfirm={handleDelete}
+       />
 
       {loading ? (
         <SkeletonRows rows={3} />

@@ -11,7 +11,8 @@ import { LedgerList } from "../components/LedgerList.js";
 import { LedgerRow } from "../components/LedgerRow.js";
 import { Button } from "../components/Button.js";
 import { EmptyState } from "../components/EmptyState.js";
-import { Field } from "../components/Field.js";
+import { FilterBar } from "../components/FilterBar.js";
+import { Checkbox } from "../components/Checkbox.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { BulkToolbar } from "../components/BulkToolbar.js";
 import type { BulkMember } from "../components/BulkToolbar.js";
@@ -261,81 +262,66 @@ export function MyIssuesPage() {
         )}
       </section>
 
-      <div className="my-issues-toolbar">
-        <label className="include-closed">
-          <input
-            type="checkbox"
-            checked={includeClosed}
-            onChange={(e) => setIncludeClosed(e.target.checked)}
-          />
-          Include closed
-        </label>
-      </div>
+<div className="my-issues-toolbar">
+         <Checkbox
+           label="Include closed"
+           checked={includeClosed}
+           onChange={(e) => setIncludeClosed(e.target.checked)}
+         />
+       </div>
 
       {data && (
-        <div className="filter-bar" role="search">
-          <Field label="Search your issues" srOnlyLabel className="field-grow search-field">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search title or description"
-            />
-          </Field>
-          <Field label="Filter by status" srOnlyLabel>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">All statuses</option>
-              {ISSUE_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Filter by priority" srOnlyLabel>
-            <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-              <option value="">All priorities</option>
-              {ISSUE_PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Sort by" srOnlyLabel>
-            <select value={sort} onChange={(e) => setSort(e.target.value as MyIssuesSortKey)}>
-              <option value="default">Default order</option>
-              <option value="due-asc">Due date: earliest first</option>
-              <option value="due-desc">Due date: latest first</option>
-              <option value="priority-high">Priority: highest first</option>
-              <option value="priority-low">Priority: lowest first</option>
-              <option value="title-az">Title: A–Z</option>
-              <option value="title-za">Title: Z–A</option>
-            </select>
-          </Field>
-          <div className="filter-meta">
+        <FilterBar
+          query={{
+            value: search,
+            onChange: setSearch,
+            placeholder: "Search title or description",
+            label: "Search your issues",
+          }}
+          selects={[
+            {
+              id: "status",
+              label: "Filter by status",
+              value: statusFilter,
+              options: [{ value: "", label: "All statuses" }, ...ISSUE_STATUSES.map((s) => ({ value: s, label: s }))],
+              onChange: setStatusFilter,
+            },
+            {
+              id: "priority",
+              label: "Filter by priority",
+              value: priorityFilter,
+              options: [{ value: "", label: "All priorities" }, ...ISSUE_PRIORITIES.map((p) => ({ value: p, label: p }))],
+              onChange: setPriorityFilter,
+            },
+          ]}
+          sort={{
+            label: "Sort by",
+            value: sort,
+            options: [
+              { value: "default", label: "Default order" },
+              { value: "due-asc", label: "Due date: earliest first" },
+              { value: "due-desc", label: "Due date: latest first" },
+              { value: "priority-high", label: "Priority: highest first" },
+              { value: "priority-low", label: "Priority: lowest first" },
+              { value: "title-az", label: "Title: A–Z" },
+              { value: "title-za", label: "Title: Z–A" },
+            ],
+            onChange: (value) => setSort(value as MyIssuesSortKey),
+          }}
+          resultCount={
             <span className="filter-count">
               {visibleItems.length} result{visibleItems.length === 1 ? "" : "s"}
             </span>
-            {filtering && (
-              <span className="filter-active">
-                Filtering
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="filter-clear"
-                  onClick={() => {
-                    setSearch("");
-                    setStatusFilter("");
-                    setPriorityFilter("");
-                    setSort("default");
-                  }}
-                >
-                  Clear filters &amp; sort
-                </Button>
-              </span>
-            )}
-          </div>
-        </div>
+          }
+          isFiltering={filtering}
+          onClear={() => {
+            setSearch("");
+            setStatusFilter("");
+            setPriorityFilter("");
+            setSort("default");
+          }}
+          clearLabel="Clear filters &amp; sort"
+        />
       )}
 
       {error && (
@@ -365,15 +351,14 @@ export function MyIssuesPage() {
       ) : data ? (
         <>
           <div className="bulk-selection-bar">
-            <label className="bulk-select-all">
-              <input
-                type="checkbox"
-                ref={selectAllRef}
-                checked={allVisibleSelected}
-                onChange={handleSelectAll}
-              />
-              Select all visible
-            </label>
+<label className="bulk-select-all">
+               <Checkbox
+                 ref={selectAllRef}
+                 label="Select all visible"
+                 checked={allVisibleSelected}
+                 onChange={handleSelectAll}
+               />
+             </label>
           </div>
 
           {bulkError && (

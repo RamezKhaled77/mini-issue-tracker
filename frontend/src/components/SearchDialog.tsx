@@ -7,6 +7,7 @@ import { api } from "../api/client.js";
 import type { BadgeTone } from "./Badge.js";
 import { Dialog } from "./Dialog.js";
 import { Field } from "./Field.js";
+import { Input } from "./Input.js";
 import { SkeletonRows } from "./Skeleton.js";
 import { Alert } from "./Alert.js";
 import { issueKey } from "../lib/issueKey.js";
@@ -188,17 +189,17 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
       description="Find issues across your workspaces"
     >
       <div className="search-dialog" onKeyDown={handleInputKeyDown}>
-        <Field label="Search issues" srOnlyLabel>
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Title, key (#A1B2C3), or project…"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </Field>
+<Field label="Search issues" srOnlyLabel>
+           <Input
+             ref={inputRef}
+             type="text"
+             value={query}
+             onChange={(e) => setQuery(e.target.value)}
+             placeholder="Title, key (#A1B2C3), or project…"
+             autoComplete="off"
+             spellCheck={false}
+           />
+         </Field>
         {query && (
           <button type="button" className="search-clear" onClick={handleClear} aria-label="Clear search">
             ×

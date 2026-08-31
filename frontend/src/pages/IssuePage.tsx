@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import type { Issue, Activity } from "@mini-issue-tracker/shared";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@mini-issue-tracker/shared";
@@ -12,8 +12,13 @@ import type { BadgeTone } from "../components/Badge.js";
 import { Button } from "../components/Button.js";
 import { Dialog } from "../components/Dialog.js";
 import { EmptyState } from "../components/EmptyState.js";
+import { FactRail } from "../components/FactRail.js";
+import type { FactRailItem } from "../components/FactRail.js";
+import { ConfirmDialog } from "../components/ConfirmDialog.js";
 import { Field } from "../components/Field.js";
 import { IssueForm } from "../components/IssueForm.js";
+import { PageHeader } from "../components/PageHeader.js";
+import { Select } from "../components/Select.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { ActivityPanel } from "../components/ActivityPanel.js";
 import { CollapsibleSection } from "../components/CollapsibleSection.js";
@@ -364,47 +369,147 @@ export function IssuePage() {
 
   const resolvedLabels = issue?.labels ?? [];
 
+  const factItems: FactRailItem[] = issue
+    ? [
+        {
+          id: "status",
+          label: "Status",
+          value: (
+            <Select
+              value={status}
+              onChange={(e) => handleChangeStatus(e.target.value)}
+              aria-label="Status"
+            >
+              {ISSUE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </Select>
+          ),
+        },
+        {
+          id: "priority",
+          label: "Priority",
+          value: (
+            <Select
+              value={priority}
+              onChange={(e) => handleChangePriority(e.target.value)}
+              aria-label="Priority"
+            >
+              {ISSUE_PRIORITIES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </Select>
+          ),
+        },
+        {
+          id: "assignee",
+          label: "Assignee",
+          value: issue.assignee ? (
+            <span className="assignee-name">
+              <Avatar name={issue.assignee.name} decorative />
+              {issue.assignee.name}
+            </span>
+          ) : (
+            "Unassigned"
+          ),
+        },
+        {
+          id: "due",
+          label: "Due date",
+          value: issue.dueDate ? issue.dueDate : "No due date",
+        },
+        ...(projectName
+          ? [
+              {
+                id: "project",
+                label: "Project",
+                value: projectName,
+              },
+            ]
+          : []),
+        ...(resolvedLabels.length > 0
+          ? [
+              {
+                id: "labels",
+                label: "Labels",
+                value: (
+                  <span className="badge-row">
+                    {resolvedLabels.map((label) => (
+                      <Badge key={label.id} tone={labelTone(label.color)}>
+                        {label.name}
+                      </Badge>
+                    ))}
+                  </span>
+                ),
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+  const backLabel =
+    workspaceName && projectName
+      ? `${workspaceName} / ${projectName}`
+      : "Back to workspace";
+
   return (
     <section>
-      <Link to={`/workspaces/${workspaceId}`} className="back-link">
-        {workspaceName && projectName
-          ? `\u2190 ${workspaceName} / ${projectName}`
-          : "\u2190 Back to workspace"}
-      </Link>
-      {error && (
-        <Alert role="alert" className="page-alert">
-          {error}
-        </Alert>
-      )}
-      {issue && (
-        <>
-          <header className="issue-header">
-            <div className="issue-heading">
-              <p className="issue-eyebrow">
-                <span className="issue-key">{issueKey(issue.id)}</span>
-                {" \u00b7 "}
-                <span>Issue</span>
-              </p>
-              <h1 className="page-title">{issue.title}</h1>
-              <p className="issue-meta-line">
-                <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
-                  {issue.status}
-                </Badge>
-                <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
-                  {issue.priority}
-                </Badge>
-              </p>
-            </div>
-            <div className="issue-header-actions">
+      <PageHeader
+        backTo={{ to: `/workspaces/${workspaceId}`, label: backLabel }}
+        eyebrow={
+          issue ? (
+            <span className="issue-eyebrow">
+              <span className="issue-key">{issueKey(issue.id)}</span>
+              {" \u00b7 "}
+              <span>Issue</span>
+            </span>
+          ) : null
+        }
+        title={issue ? issue.title : ""}
+        meta={
+          issue ? (
+            <p className="issue-meta-line">
+              <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
+                {issue.status}
+              </Badge>
+              <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
+                {issue.priority}
+              </Badge>
+            </p>
+          ) : null
+        }
+        actions={
+          issue ? (
+            <>
               <Button type="button" variant="secondary" onClick={() => setEditOpen(true)}>
                 Edit issue
               </Button>
               <Button type="button" variant="danger" onClick={() => setDeleteOpen(true)}>
                 Delete issue
               </Button>
-            </div>
-          </header>
-
+            </>
+          ) : null
+        }
+      />
+      {error && (
+        <Alert role="alert" className="page-alert">
+          {error}
+        </Alert>
+      )}
+      <p
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {saved ? "Saved" : ""}
+      </p>
+      {issue && (
+        <>
           {saved && (
             <Alert variant="success" className="success-notice">
               Saved
@@ -484,72 +589,7 @@ export function IssuePage() {
               </div>
             </div>
 
-            <aside className="fact-rail">
-              <h2 className="section-eyebrow">Details</h2>
-              <dl className="fact-list">
-                <div>
-                  <dt className="fact-label">Status</dt>
-                  <dd className="fact-value">
-                    <select value={status} onChange={(e) => handleChangeStatus(e.target.value)} aria-label="Status">
-                      {ISSUE_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="fact-label">Priority</dt>
-                  <dd className="fact-value">
-                    <select value={priority} onChange={(e) => handleChangePriority(e.target.value)} aria-label="Priority">
-                      {ISSUE_PRIORITIES.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="fact-label">Assignee</dt>
-                  <dd className="fact-value">
-                    {issue.assignee ? (
-                      <span className="assignee-name">
-                        <Avatar name={issue.assignee.name} decorative />
-                        {issue.assignee.name}
-                      </span>
-                    ) : (
-                      "Unassigned"
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="fact-label">Due date</dt>
-                  <dd className="fact-value">{issue.dueDate ? issue.dueDate : "No due date"}</dd>
-                </div>
-                {projectName && (
-                  <div>
-                    <dt className="fact-label">Project</dt>
-                    <dd className="fact-value">{projectName}</dd>
-                  </div>
-                )}
-                {resolvedLabels.length > 0 && (
-                  <div>
-                    <dt className="fact-label">Labels</dt>
-                    <dd className="fact-value">
-                      <span className="badge-row">
-                        {resolvedLabels.map((label) => (
-                          <Badge key={label.id} tone={labelTone(label.color)}>
-                            {label.name}
-                          </Badge>
-                        ))}
-                      </span>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </aside>
+            <FactRail items={factItems} labelledBy="issue-fact-rail-title" />
           </div>
 
           <Dialog
@@ -571,21 +611,18 @@ export function IssuePage() {
             />
           </Dialog>
 
-          <Dialog
+          <ConfirmDialog
             open={deleteOpen}
-            onClose={() => setDeleteOpen(false)}
+            onClose={() => {
+              if (!deleting) setDeleteOpen(false);
+            }}
             title="Delete issue"
-            description={`Delete this issue and all its comments? This cannot be undone.`}
-          >
-            <div className="dialog-actions">
-              <Button type="button" variant="secondary" onClick={() => setDeleteOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="button" variant="danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting..." : "Delete issue confirmation"}
-              </Button>
-            </div>
-          </Dialog>
+            description="Delete this issue and all its comments? This cannot be undone."
+            confirmLabel="Delete issue confirmation"
+            busyLabel="Deleting..."
+            busy={deleting}
+            onConfirm={handleDelete}
+          />
         </>
       )}
     </section>

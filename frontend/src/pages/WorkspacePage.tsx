@@ -26,7 +26,8 @@ import { LedgerRow } from "../components/LedgerRow.js";
 import { Button } from "../components/Button.js";
 import { Dialog } from "../components/Dialog.js";
 import { EmptyState } from "../components/EmptyState.js";
-import { Field } from "../components/Field.js";
+import { Checkbox } from "../components/Checkbox.js";
+import { FilterBar } from "../components/FilterBar.js";
 import { SkeletonRows } from "../components/Skeleton.js";
 import { BulkToolbar } from "../components/BulkToolbar.js";
 import type { BulkMember } from "../components/BulkToolbar.js";
@@ -78,7 +79,6 @@ export function WorkspacePage() {
   const [viewsLoading, setViewsLoading] = useState(true);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [staleNote, setStaleNote] = useState<string | null>(null);
-  const [saveSignal, setSaveSignal] = useState(0);
   const appliedSnapshotRef = useRef("");
   const [searchParams, setSearchParams] = useSearchParams();
   const urlInitRef = useRef(false);
@@ -418,7 +418,6 @@ export function WorkspacePage() {
             labels={labels}
             loading={loading || viewsLoading}
             activeViewId={activeViewId}
-            saveSignal={saveSignal}
             getFilters={currentFilters}
             onSelect={handleSelectView}
             onChange={loadViews}
@@ -456,80 +455,63 @@ export function WorkspacePage() {
           )}
 
           {selectedProject && (
-            <div className="filter-bar" role="search">
-              <Field label="Search issues" srOnlyLabel className="field-grow search-field">
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search title or description"
-                />
-              </Field>
-              <Field label="Filter by status" srOnlyLabel>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                  <option value="">All statuses</option>
-                  {ISSUE_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Filter by priority" srOnlyLabel>
-                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-                  <option value="">All priorities</option>
-                  {ISSUE_PRIORITIES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              {labels.length > 0 && (
-                <Field label="Filter by label" srOnlyLabel>
-                  <select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)}>
-                    <option value="">All labels</option>
-                    {labels.map((label) => (
-                      <option key={label.id} value={label.id}>
-                        {label.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-              <div className="filter-meta">
-                {staleNote && (
-                  <span className="filter-active" role="status">
-                    {staleNote}
-                  </span>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setSaveSignal((n) => n + 1)}
-                  disabled={!selectedProject}
-                >
-                  Save view
-                </Button>
-                {(filtering || issues.length > 0) && (
+            <FilterBar
+              query={{
+                value: search,
+                onChange: setSearch,
+                placeholder: "Search title or description",
+                label: "Search issues",
+              }}
+              selects={[
+                {
+                  id: "status",
+                  label: "Filter by status",
+                  value: statusFilter,
+                  options: [{ value: "", label: "All statuses" }, ...ISSUE_STATUSES.map((s) => ({ value: s, label: s }))],
+                  onChange: setStatusFilter,
+                },
+                {
+                  id: "priority",
+                  label: "Filter by priority",
+                  value: priorityFilter,
+                  options: [{ value: "", label: "All priorities" }, ...ISSUE_PRIORITIES.map((p) => ({ value: p, label: p }))],
+                  onChange: setPriorityFilter,
+                },
+                ...(labels.length > 0
+                  ? [
+                      {
+                        id: "label",
+                        label: "Filter by label",
+                        value: labelFilter,
+                        options: [{ value: "", label: "All labels" }, ...labels.map((label) => ({ value: label.id, label: label.name }))],
+                        onChange: setLabelFilter,
+                      },
+                    ]
+                  : []),
+              ]}
+              resultCount={
+                filtering || issues.length > 0 ? (
                   <span className="filter-count">
                     {issues.length} result{issues.length === 1 ? "" : "s"}
                   </span>
-                )}
-                {filtering && (
-                  <span className="filter-active">
-                    Filtering
-                    <Button type="button" variant="ghost" className="filter-clear" onClick={() => {
-                      setSearch("");
-                      setStatusFilter("");
-                      setPriorityFilter("");
-                      setLabelFilter("");
-                    }}>
-                      Clear filters
-                    </Button>
+                ) : null
+              }
+              actions={
+                staleNote ? (
+                  <span className="filter-active" role="status">
+                    {staleNote}
                   </span>
-                )}
-              </div>
-            </div>
+                ) : null
+              }
+              isFiltering={filtering}
+              onClear={() => {
+                setSearch("");
+                setStatusFilter("");
+                setPriorityFilter("");
+                setLabelFilter("");
+              }}
+              clearLabel="Clear filters"
+            />
           )}
 
           {!selectedProject ? (
@@ -542,15 +524,14 @@ export function WorkspacePage() {
           ) : (
             <>
               <div className="bulk-selection-bar">
-                <label className="bulk-select-all">
-                  <input
-                    type="checkbox"
-                    ref={selectAllRef}
-                    checked={allVisibleSelected}
-                    onChange={handleSelectAll}
-                  />
-                  Select all visible
-                </label>
+<label className="bulk-select-all">
+                   <Checkbox
+                     ref={selectAllRef}
+                     label="Select all visible"
+                     checked={allVisibleSelected}
+                     onChange={handleSelectAll}
+                   />
+                 </label>
               </div>
 
               {bulkError && (

@@ -497,6 +497,51 @@ workspace composition, not a card layout. The rail collapses below 900px.
 
 ---
 
+## 16a. Filter Bar
+
+The filter bar (`.filter-bar`) is the canonical control surface for the ledger
+surfaces (`WorkspacePage`, `MyIssuesPage`). It is a **UI contract, not a filter
+engine**: the pages own their filter state, URL projection, saved-view semantics,
+sorting logic, and project/label semantics. The bar owns only the shared
+presentation.
+
+Anatomy (left → right):
+
+- **Leading search** — `field-grow search-field` text input, magnifier glyph,
+  sr-only label. Flexible priority (`flex: 2`).
+- **Status / priority / label selects** — `Field`-wrapped `<select>`s, each
+  `flex: 1`, `min-width: 150px`, sr-only label. Order is preserved by the page.
+- **Sort select** (My Issues only) — trailing `Field`-wrapped `<select>`.
+- **Trailing meta** (`.filter-meta`) — result count (`filter-count`, mono,
+  tabular-nums), the "Filtering… Clear filters" affordance (`filter-active` +
+  ghost `filter-clear`), and any page-supplied trailing node (e.g. a staleness
+  note).
+
+Desktop / tablet (≥700px): controls are always visible, laid out in a single
+ruled row. Hairline top/bottom rules, `--space-2` internal padding, white
+surface, `align-items: flex-end`. No card, no shadow, no rounded container.
+
+Mobile (≤700px): a ghost **"Filters" disclosure toggle** (`.filter-bar-toggle`,
+44px coarse-pointer target) sits at the leading edge. Tapping it reveals / hides
+the controls. The toggle carries `aria-expanded` and `aria-controls` pointing at
+the controls region; it is keyboard accessible (native `<button>`). The controls
+stay mounted (only their display toggles) so focus and form state are preserved.
+The toggle is **not rendered** on desktop, so the desktop layout is unchanged.
+
+Spacing / typography: reuses the existing `.filter-bar`, `.filter-meta`,
+`.filter-count`, `.filter-active`, `.filter-clear` rules — no new tokens.
+
+Accessibility: visible focus on the toggle (inherited from `.btn`), correct
+`aria-expanded` state, no focus trap, no new animation system. `prefers-reduced-motion`
+is unaffected (the disclosure is a display toggle, not an animation).
+
+Reuse this primitive for any ledger-surface filter toolbar. Do **not** use it for
+non-ledger filter surfaces, do not add a new visual style to it, and do not
+introduce a configuration system — the page composes its own selects and passes
+them in.
+
+---
+
 ## 17. Statistics Strip
 
 Statistics are a ruled editorial data strip.
@@ -783,6 +828,16 @@ The issue key is visually prominent. Pattern:
 (mono eyebrow — key in petrol, `ISSUE` in faint), followed by the issue title
 as the page heading, then a status + priority badge line.
 
+The masthead uses the canonical **`PageHeader`** primitive
+(`frontend/src/components/PageHeader.tsx`, layout at `styles/layout.css`):
+`backTo` (dynamic label, e.g. `Workspace / Project` or "Back to workspace"),
+`eyebrow` (the `#KEY · ISSUE` row), `title` (the `<h1>` issue title), `meta`
+(status + priority badge row), and `actions` (Edit / Delete). The visible
+structure is identical to the previous inline `issue-header` markup; the
+primitive owns the typography hierarchy and the hairline rule so the issue
+page reads as another instance of the editorial page structure, not a
+bespoke layout.
+
 ---
 
 ## 22. Issue Description
@@ -808,6 +863,20 @@ Edit and Delete live in the issue **masthead** (header), right-aligned.
 
 The actions must not compete with the issue title.
 
+Destructive confirms (delete issue, delete project, delete label, delete
+saved view, bulk delete) are rendered through the **`ConfirmDialog`**
+primitive (`frontend/src/components/ConfirmDialog.tsx`). It is a thin
+semantic layer over the existing `Dialog` (focus trap / Escape / focus
+return / `modalLayer` registration), using the standard `.dialog-actions`
+row, the existing secondary `Cancel` button, and the existing
+`Button variant="danger"` (coral) for the confirm action. The destructive
+action is the only place coral appears in this flow; no new modal styling,
+no new shadows, no new radii, no custom focus logic.
+
+Reuse `ConfirmDialog` for any future destructive confirmation. **Do not**
+introduce a generic modal framework, custom confirm sheets, browser-native
+`window.confirm`, or per-page dialog markup.
+
 ---
 
 ## 24. Fact Rail
@@ -828,6 +897,23 @@ card.
 Typical fields: Status, Priority, Assignee, Due date, Project, Labels.
 The rail feels like metadata in an editorial document. Empty values render
 honestly as "Unassigned" / "No due date".
+
+The rail is implemented as the **`FactRail`** primitive
+(`frontend/src/components/FactRail.tsx`, styles at `styles/pages/issue.css`
+under the `.fact-rail` / `.fact-list` / `.fact-label` / `.fact-value`
+prefixes). API: `items: Array<{ id, label, value: ReactNode }>` plus an
+optional `title` (defaults to "Details") and an optional `labelledBy` id.
+**`FactRail` is presentation-only** — it owns the `<dl>` semantics, the
+label/value rhythm, and the ruled-row spacing; the page owns the data,
+mutation logic, API calls, permissions, option generation, and the
+status/priority/assignee/due-date semantics. Value controls are passed in
+as ReactNode (e.g. `<Select>` for status/priority), so any control with
+its own focus / keyboard / `aria-label` contract is preserved unchanged.
+
+Reuse `FactRail` for any future "structured list of fact rows" surface
+on an issue-like document (e.g. project detail, workspace overview).
+**Do not** add card chrome, a border container, a background, or a
+shadow — the rail is intentionally a document surface, not a side panel.
 
 ---
 
@@ -1030,6 +1116,12 @@ A component is not visually correct if it becomes inaccessible. Preserve:
 - reduced-motion support
 - `aria-hidden` on decorative icons/avatars; meaningful avatars get accessible
   names
+- **polite mutation status** — page-level `role="status"` + `aria-live="polite"`
+  + `aria-atomic="true"` regions announce successful mutations (e.g. the
+  issue page's "Saved" success notice) without producing visual noise. They
+  are paired with, not a replacement for, the existing `role="alert"` error
+  regions, which are still used for failures so the announcement remains
+  assertive when something is wrong.
 
 ---
 

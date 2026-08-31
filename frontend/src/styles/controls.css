@@ -573,6 +573,28 @@
   color: var(--color-accent-hover);
 }
 
+/* FilterBar disclosure (narrow viewports only — owned by the FilterBar
+   component). On desktop the toggle is not rendered, so controls are always
+   laid out here exactly as before. */
+.filter-bar-toggle {
+  flex: 0 0 auto;
+  margin-right: var(--space-2);
+}
+
+.filter-bar-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Collapsed state only applied on mobile (guarded by the component). */
+.filter-bar--collapsed .filter-bar-controls {
+  display: none;
+}
+
 /* ---------------------------------------------------------------------------
    Issue form / label picker
    -------------------------------------------------------------------------- */

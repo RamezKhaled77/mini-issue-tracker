@@ -13,6 +13,7 @@ import { Field } from "../components/Field.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { LedgerList } from "../components/LedgerList.js";
 import { LedgerRow } from "../components/LedgerRow.js";
+import { Input } from "../components/Input.js";
 import { refreshWorkspaceCache } from "../lib/workspaceCache.js";
 
 export function DashboardPage() {
@@ -75,15 +76,15 @@ export function DashboardPage() {
         description="Create a workspace to organize your team's projects."
       >
         <form className="dialog-form" onSubmit={handleCreate}>
-          <Field label="Name">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Workspace name"
-              autoFocus
-              required
-            />
-          </Field>
+<Field label="Name">
+             <Input
+               value={name}
+               onChange={(e) => setName(e.target.value)}
+               placeholder="Workspace name"
+               autoFocus
+               required
+             />
+           </Field>
           <div className="dialog-actions">
             <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>
               Cancel
