@@ -539,3 +539,18 @@
     justify-content: flex-end;
   }
 }
+
+/* LedgerList mono count caption. */
+.ledger-count {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono);
+  color: var(--color-text-faint);
+}
+
+/* Canonical metadata due-date (non-quick-edit consumers). */
+.ledger-due {
+  font-size: var(--text-meta);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}

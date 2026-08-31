@@ -513,18 +513,29 @@ faint text at rest, coral tint + coral text on delete hover.
 
 This is the most important component in the product.
 
+The ledger signature is implemented once as the canonical `LedgerRow`
+(`frontend/src/components/LedgerRow.tsx`, CSS in `ledger.css`) and consumed by
+every surface: the Workspace project ledger, My Issues, global Search
+(compact variant), and the Dashboard workspace list (workspace variant).
+Multiple historical copies were consolidated (Workstream 2 of spec 012);
+**page ledger row markup must not be hand-assembled again** — always mount
+`LedgerRow`.
+
 Each issue row communicates, in order:
 
 1. **Priority** through a small vertical **edge bar** (3px, priority color).
 2. Ticket key (mono).
 3. Issue title (600).
-4. Optional short description.
+4. **Caption slot** for an optional short description or project name — the
+   single caption location for any consumer (replaces the previously
+   inconsistent `ledger-context` styling).
 5. Status.
 6. Priority.
-7. Label chips (up to two, in the label's own color tone; a `+N more` text
-   appears when the issue has more).
+7. Label chips (**capped at two** across all surfaces — a consistent rule that
+   previously only applied to My Issues), in the label's own color tone.
 8. Assignee.
-9. Directional chevron.
+9. Due date (default variant only; the **compact** search variant hides it).
+10. Directional chevron.
 
 The row feels like a real ledger entry. Use a **56px minimum row height** on
 desktop with 12px vertical padding; a wrapped title may naturally make it
@@ -534,6 +545,19 @@ secondary detail enough separation.
 The priority edge bar is one of the product's strongest visual signatures. It
 should appear consistently across the issue list, hover states, and the issue
 detail identity where appropriate.
+
+### Anatomy & ownership
+
+`LedgerRow` owns the row structure, visual/interaction states, responsive wrap
+and row semantics (`<li class="ledger-item">` with `data-priority` /
+`data-overdue`). Pages compute and pass: `issueKey`, `isOverdue`, label tones,
+bulk-selection state, and quick-edit state — **business logic does not live in
+the row**. Label badges are capped at two inside the component.
+
+For page ledgers (Workspace / My Issues) the **metadata run is rendered outside
+the navigation link** (preserving the quick-edit contract that editing must
+never trigger navigation); overlay (search) and Dashboard workspace rows keep
+metadata inside the single link.
 
 ### Cross-workspace ledger (My Issues)
 
@@ -681,7 +705,8 @@ bar; it exists only for a live multi-row selection.
 Intended hierarchy: **ticket key → issue title → metadata**.
 
 - Ticket key: mono, compact, strong enough to scan, not overly faint. On row
-  hover it turns petrol.
+  hover and `:focus-within`, the key shifts toward the accent (`--color-accent`)
+  to signal the row is interactive.
 - Title: 600 weight, primary visual content.
 - Metadata (status / priority / label chips / assignee): must not overpower
   the title.

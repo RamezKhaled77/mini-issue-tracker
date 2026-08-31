@@ -21,6 +21,9 @@ import { ProjectDialog } from "../components/ProjectDialog.js";
 import { Alert } from "../components/Alert.js";
 import { Avatar } from "../components/Avatar.js";
 import { Badge } from "../components/Badge.js";
+import type { BadgeTone } from "../components/Badge.js";
+import { LedgerList } from "../components/LedgerList.js";
+import { LedgerRow } from "../components/LedgerRow.js";
 import { Button } from "../components/Button.js";
 import { Dialog } from "../components/Dialog.js";
 import { EmptyState } from "../components/EmptyState.js";
@@ -509,51 +512,41 @@ export function WorkspacePage() {
                 />
               )}
 
-              <ul className="ledger-list">
-                {issues.map((issue) => (
-                  <li
+              <LedgerList
+                ariaLabel="Project issues"
+                rows={issues.map((issue) => (
+                  <LedgerRow
                     key={issue.id}
-                    className={`ledger-item${selected.has(issue.id) ? " ledger-item--selected" : ""}`}
-                    data-priority={issue.priority.toLowerCase()}
-                    data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
-                  >
-                    <span className="ledger-select">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(issue.id)}
-                        onChange={() => setSelected((prev) => toggle(prev, issue.id))}
-                        aria-label={`Select ${issue.title}`}
-                      />
-                    </span>
-                    <Link
-                      to={`/workspaces/${workspaceId}/issues/${issue.id}`}
-                      className="ledger-row-link"
-                    >
-                      <span className="ticket-key">{issueKey(issue.id)}</span>
-                      <span className="ledger-main">
-                        <span className="ledger-title">{issue.title}</span>
-                        {issue.description && (
-                          <span className="ledger-subtitle">{issue.description}</span>
+                    to={`/workspaces/${workspaceId}/issues/${issue.id}`}
+                    issueKey={issueKey(issue.id)}
+                    title={issue.title}
+                    caption={issue.description}
+                    priority={{ tone: "neutral" as BadgeTone, label: issue.priority }}
+                    overdue={isOverdue(issue.dueDate, issue.status)}
+                    selected={selected.has(issue.id)}
+                    selectable={{
+                      checked: selected.has(issue.id),
+                      onChange: () => setSelected((prev) => toggle(prev, issue.id)),
+                      label: `Select ${issue.title}`,
+                    }}
+                    meta={
+                      <>
+                        {isOverdue(issue.dueDate, issue.status) && (
+                          <Badge tone="danger">Overdue</Badge>
                         )}
-                      </span>
-                    </Link>
-                    <span className="ledger-meta" data-quickedit="meta">
-                      {isOverdue(issue.dueDate, issue.status) && (
-                        <Badge tone="danger">Overdue</Badge>
-                      )}
-                      <QuickEditSelect
-                        field="status"
-                        open={isQuickEditing(quickEdit, issue.id, "status")}
-                        busy={qeBusy}
-                        value={issue.status}
-                        displayValue={issue.status}
-                        tone={`status-${issue.status.toLowerCase().replace(" ", "-")}`}
-                        options={ISSUE_STATUSES.map((s) => ({ value: s, label: s }))}
-                        onOpen={() => openField(issue.id, "status")}
-                        onCommit={(status) => commitQuickEdit(issue.id, { status })}
-                        onCancel={() => closeField(issue.id, "status")}
-                      />
-                      <QuickEditSelect
+                        <QuickEditSelect
+                          field="status"
+                          open={isQuickEditing(quickEdit, issue.id, "status")}
+                          busy={qeBusy}
+                          value={issue.status}
+                          displayValue={issue.status}
+                          tone={`status-${issue.status.toLowerCase().replace(" ", "-")}`}
+                          options={ISSUE_STATUSES.map((s) => ({ value: s, label: s }))}
+                          onOpen={() => openField(issue.id, "status")}
+                          onCommit={(status) => commitQuickEdit(issue.id, { status })}
+                          onCancel={() => closeField(issue.id, "status")}
+                        />
+                        <QuickEditSelect
                         field="priority"
                         open={isQuickEditing(quickEdit, issue.id, "priority")}
                         busy={qeBusy}
@@ -617,11 +610,10 @@ export function WorkspacePage() {
                         onApply={(dueDate) => commitQuickEdit(issue.id, { dueDate })}
                         onCancel={() => closeField(issue.id, "dueDate")}
                       />
-                    </span>
-                    <span className="ledger-chevron" aria-hidden="true">
-                      &rarr;
-                    </span>
-                    {qeError?.issueId === issue.id && (
+                    </>
+                  }
+                  rowError={
+                    qeError?.issueId === issue.id ? (
                       <Alert
                         ref={qeAlertRef}
                         role="alert"
@@ -630,10 +622,11 @@ export function WorkspacePage() {
                       >
                         {qeError.message}
                       </Alert>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                    ) : undefined
+                  }
+                />
+              ))}
+              />
             </>
           )}
         </div>

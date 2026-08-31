@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import type { Workspace } from "@mini-issue-tracker/shared";
 import { JoinWorkspace } from "../components/JoinWorkspace.js";
@@ -12,7 +11,8 @@ import { SkeletonRows } from "../components/Skeleton.js";
 import { Field } from "../components/Field.js";
 
 import { PageHeader } from "../components/PageHeader.js";
-import { IconBrand } from "../components/icons.js";
+import { LedgerList } from "../components/LedgerList.js";
+import { LedgerRow } from "../components/LedgerRow.js";
 
 export function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -103,24 +103,19 @@ export function DashboardPage() {
           />
         </div>
       ) : (
-        <ul className="ledger-list dashboard-ledger">
-          {workspaces.map((ws) => (
-            <li key={ws.id}>
-              <Link to={`/workspaces/${ws.id}`} className="ledger-row">
-                <span className="app-brand-mark" aria-hidden="true">
-                  <IconBrand />
-                </span>
-                <span className="ledger-main">
-                  <span className="ledger-title">{ws.name}</span>
-                </span>
-                <Badge tone="neutral">{ws.isOwner ? "Owner" : "Member"}</Badge>
-                <span className="ledger-chevron" aria-hidden="true">
-                  &rarr;
-                </span>
-              </Link>
-            </li>
+        <LedgerList
+          ariaLabel="Workspaces"
+          className="dashboard-ledger"
+          rows={workspaces.map((ws) => (
+            <LedgerRow
+              key={ws.id}
+              variant="workspace"
+              to={`/workspaces/${ws.id}`}
+              title={ws.name}
+              meta={<Badge tone="neutral">{ws.isOwner ? "Owner" : "Member"}</Badge>}
+            />
           ))}
-        </ul>
+        />
       )}
 
       <section className="dashboard-join">

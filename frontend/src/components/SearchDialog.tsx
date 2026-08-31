@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { SearchIssue } from "@mini-issue-tracker/shared";
 import { SEARCH_DEFAULT_LIMIT, SEARCH_MIN_LENGTH } from "@mini-issue-tracker/shared";
 import { api } from "../api/client.js";
-import { Avatar } from "./Avatar.js";
-import { Badge } from "./Badge.js";
 import type { BadgeTone } from "./Badge.js";
 import { Dialog } from "./Dialog.js";
 import { Field } from "./Field.js";
@@ -14,6 +12,7 @@ import { Alert } from "./Alert.js";
 import { issueKey } from "../lib/issueKey.js";
 import { isOverdue } from "../lib/isOverdue.js";
 import { labelTone } from "../lib/labelTone.js";
+import { LedgerRow } from "./LedgerRow.js";
 
 const DEBOUNCE_MS = 250;
 
@@ -149,44 +148,32 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
         </p>
         <ul className="ledger-list search-list">
           {state.items.map((issue, index) => (
-            <li key={issue.id} className="ledger-item">
-              <Link
-                to={`/workspaces/${issue.workspaceId}/issues/${issue.id}`}
-                className={`ledger-row ledger-row--search${index === activeIndex ? " ledger-row--active" : ""}`}
-                data-priority={issue.priority.toLowerCase()}
-                data-overdue={isOverdue(issue.dueDate, issue.status) ? "true" : undefined}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={onClose}
-              >
-                <span className="ticket-key">{issueKey(issue.id)}</span>
-                <span className="ledger-main">
-                  <span className="ledger-title">{issue.title}</span>
-                </span>
-                <span className="ledger-meta">
-                  <span className="ledger-context">
-                    {issue.workspaceName} / {issue.projectName}
-                  </span>
-                  {isOverdue(issue.dueDate, issue.status) && <Badge tone="danger">Overdue</Badge>}
-                  <Badge tone={`status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone}>
-                    {issue.status}
-                  </Badge>
-                  <Badge tone={`priority-${issue.priority.toLowerCase()}` as BadgeTone}>
-                    {issue.priority}
-                  </Badge>
-                  {issue.labels.slice(0, 2).map((label) => (
-                    <Badge key={label.id} tone={labelTone(label.color)}>
-                      {label.name}
-                    </Badge>
-                  ))}
-                  {issue.assignee && (
-                    <span className="card-assignee">
-                      <Avatar name={issue.assignee.name} decorative small />
-                      {issue.assignee.name}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            </li>
+            <LedgerRow
+              key={issue.id}
+              variant="compact"
+              to={`/workspaces/${issue.workspaceId}/issues/${issue.id}`}
+              issueKey={issueKey(issue.id)}
+              title={issue.title}
+              caption={issue.projectName}
+              overdue={isOverdue(issue.dueDate, issue.status)}
+              statusBadge={{
+                tone: `status-${issue.status.toLowerCase().replace(" ", "-")}` as BadgeTone,
+                label: issue.status,
+              }}
+              priority={{
+                tone: `priority-${issue.priority.toLowerCase()}` as BadgeTone,
+                label: issue.priority,
+              }}
+              labels={issue.labels.map((label) => ({
+                id: label.id,
+                tone: labelTone(label.color),
+                name: label.name,
+              }))}
+              assignee={issue.assignee ?? undefined}
+              active={index === activeIndex}
+              onHover={() => setActiveIndex(index)}
+              onNavigate={onClose}
+            />
           ))}
         </ul>
       </>

@@ -75,7 +75,9 @@ describe("SearchDialog", () => {
     expect(screen.getByText("#A1B2C3")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("2 results · showing first 1");
     expect(screen.getByText("Fix login flow")).toBeInTheDocument();
-    expect(screen.getByText("Alpha / Web")).toBeInTheDocument();
+    // Spec 012 drift resolution: search rows use the caption slot for the
+    // project name (the "Workspace / Project" context run was removed).
+    expect(screen.getByText("Web")).toBeInTheDocument();
     const row = screen.getByRole("link", { name: /Fix login flow/ });
     expect(row.getAttribute("href")).toBe("/workspaces/ws-1/issues/a1b2c3d4-0000-4000-8000-000000000001");
     expect(row.className).toContain("ledger-row--search");
