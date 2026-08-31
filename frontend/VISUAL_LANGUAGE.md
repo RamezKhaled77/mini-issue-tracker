@@ -743,6 +743,21 @@ The trailing arrow is subtle by default (faint, 45% opacity). On hover it
 strengthens slightly, moves a couple of pixels, and turns petrol; the row gains
 a warm tint. Avoid dramatic animations.
 
+- **Quick Edit (inline row editing)** — an interaction surface layered onto the
+  ledger, *not* a new row shape. The quick-edit control lives inside `LedgerRow`'s
+  metadata slot via the `data-quickedit="meta"` marker; row anatomy (priority edge
+  bar, ticket key, title, caption, primary metadata) is unchanged. Editing
+  replaces only the trailing metadata so the row stays a ruled ledger entry.
+  - One field open at a time (D-06); opening a field on a row already editing
+    closes the previous field first.
+  - `qe-busy` dimming + cursor during PATCH (D-12); other rows stay interactive.
+  - Commit writes through `PATCH /issues/:id` (D-01/D-02), then the row reloads.
+  - Row-local error: an inline `Alert` (`qe-row-alert`, `role="alert"`,
+    `tabindex=-1`, coral) scoped to that single row — never a page toast. Coral
+    here is *destructive / attention* (§7), so it is the deliberate exception to
+    "coral is never used for selection" in §19a.
+  - `Esc` / clicking elsewhere closes the open field without committing a draft.
+
 ---
 
 ## 21. Issue Detail Page
