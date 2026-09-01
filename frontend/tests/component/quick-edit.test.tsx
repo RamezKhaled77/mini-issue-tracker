@@ -132,6 +132,18 @@ describe("QuickEditSelect", () => {
       "Change status, currently Open"
     );
   });
+
+  it("exposes aria-expanded on the trigger", () => {
+    render(<SelectHarness onCommit={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: "Change status, currently Open" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(trigger);
+    // QuickEditSelect swaps the trigger for a native <select> when open, so the
+    // open state is verified by the combobox appearing (not by aria-expanded="true"
+    // on a still-mounted trigger, as Select/Date popovers do).
+    expect(screen.getByRole("combobox", { name: "Change status, currently Open" })).toBeInTheDocument();
+  });
 });
 
 describe("QuickEditLabels", () => {
@@ -169,6 +181,15 @@ describe("QuickEditLabels", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     expect(onApply).toHaveBeenCalledWith(["l1"]);
+  });
+
+  it("exposes aria-expanded on the trigger", () => {
+    render(<LabelsHarness onApply={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: "Change labels, currently bug" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
   });
 
   it("Escape cancels and returns focus to the trigger", () => {
@@ -217,5 +238,14 @@ describe("QuickEditDate", () => {
     });
     expect(onApply).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it("exposes aria-expanded on the trigger", () => {
+    render(<DateHarness onApply={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: "Change due date, currently none" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
   });
 });

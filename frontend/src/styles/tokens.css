@@ -112,7 +112,6 @@
   --avatar-bg: var(--color-accent-subtle);
   --avatar-fg: var(--color-accent);
   --avatar-border: var(--color-border);
-  --avatar-fg-coral: #c2410c; /* coral tone avatar text (tone-4) */
 
   /* --- 1.3 Typography scale --- */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",

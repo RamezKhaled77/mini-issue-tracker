@@ -115,7 +115,7 @@ export function LedgerRow({
           </Badge>
         ))}
         {assignee && (
-          <span className="card-assignee">
+          <span className="ledger-assignee">
             <Avatar name={assignee.name} decorative small />
             {assignee.name}
           </span>

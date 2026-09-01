@@ -143,7 +143,7 @@
 }
 .avatar--tone-4 {
   --avatar-bg: var(--color-coral-bg);
-  --avatar-fg: #c2410c;
+  --avatar-fg: var(--color-coral);
 }
 .avatar--tone-5 {
   --avatar-bg: var(--color-surface-subtle);

@@ -38,6 +38,7 @@ export function QuickEditDate({ open, busy, dueDate, onOpen, onApply, onCancel }
         type="button"
         className={`badge badge--neutral qe-trigger qe-date-trigger${dueDate ? "" : " qe-trigger--quiet"}`}
         aria-label={accessibleName}
+        aria-expanded={open}
         data-quickedit="dueDate"
         disabled={busy}
         aria-busy={busy || undefined}

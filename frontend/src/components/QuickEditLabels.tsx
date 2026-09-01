@@ -60,6 +60,7 @@ export function QuickEditLabels({
           type="button"
           className={`badge badge--${labelTone(label.color)} qe-trigger`}
           aria-label={accessibleName}
+          aria-expanded={open}
           data-quickedit="labels"
           disabled={busy}
           aria-busy={busy || undefined}
@@ -77,6 +78,7 @@ export function QuickEditLabels({
           type="button"
           className="ledger-more-labels qe-trigger qe-trigger--quiet"
           aria-label={accessibleName}
+          aria-expanded={open}
           data-quickedit="labels"
           disabled={busy}
           onClick={(e) => {
@@ -93,6 +95,7 @@ export function QuickEditLabels({
           type="button"
           className="badge badge--neutral qe-trigger"
           aria-label={accessibleName}
+          aria-expanded={open}
           data-quickedit="labels"
           disabled={busy}
           onClick={(e) => {

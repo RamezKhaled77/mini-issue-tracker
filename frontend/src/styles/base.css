@@ -90,6 +90,9 @@ a {
 @media (pointer: coarse) {
   .btn,
   .sidebar-toggle,
+  .sidebar-link,
+  .workspace-switcher-trigger,
+  .search-clear,
   .label-chip,
   .color-radio,
   .card-main,

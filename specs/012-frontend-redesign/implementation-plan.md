@@ -30,6 +30,20 @@ regressions. End state = §20 acceptance criteria.
 
 ## 3. Current Architecture Summary (verified)
 
+> **Implementation status**: The eight workstreams this document plans (WS1–WS8)
+> are **already implemented and committed** on `master` (latest: `adf9579`
+> "finish the ws1 → ws6 for frontend redesign"). The code currently on disk
+> matches the §4 Target Architecture and §20 acceptance criteria:
+> `styles/components.css` is deleted, `styles/index.css` imports the approved
+> split, all 12 primitives exist, routes `/workspaces/:id/labels` + `/`→404 +
+> `<ErrorBoundary>` are in `App.tsx`, `lib/urlFilters.ts` exists with
+> `WORKSPACE_FILTER_KEYS`/`MY_ISSUES_FILTER_KEYS`, and `grep -rn saveSignal src`
+> is empty. The in-flight working-tree changes (QuickEdit `aria-expanded`,
+> coarse-pointer target expansion) are the WS7 accessibility polish this plan
+> reserved. §3 below is retained verbatim as the baseline context the plan was
+> authored against; §9's LedgerRow API is corrected in place to match the
+> shipped contract.
+
 - 5 routes (`App.tsx`), 1 shell (`Layout.tsx`, sidebar-only, global shortcuts `/`,
   `⌘K`, `?`, `G D`, `G M`), 31 components, 6 pages, 12 lib/util modules, cookie auth
   context, bare fetch client.
@@ -227,25 +241,46 @@ Contextual workspace nav (rendered only when `useParams().workspaceId` is presen
 ticket key → title → caption slot → metadata slot (status badge, priority badge, ≤2
 label badges, assignee chip, due date — fixed order) → quick-edit slot → chevron.
 
-**API**:
+**API** (matches the shipped `components/LedgerRow.tsx`):
+
 ```ts
 interface LedgerRowProps {
   to: string;                       // row link target (unchanged navigation)
-  issueKey: string;                 // via lib/issueKey — behavior unchanged
-  title: string;
-  statusBadge: BadgeTone; statusLabel: string;   // explicit, no inference
+  title: ReactNode;
+  issueKey?: string;                // via lib/issueKey — behavior unchanged
+  /** Caption slot under the title (ONE slot: cross-workspace / project caption). */
+  caption?: ReactNode;
+  /**
+   * Page-composed metadata slot. When provided, the page renders the full
+   * metadata run (hosted QuickEdit* components via `data-quickedit="meta"`).
+   * When omitted, the component renders canonical metadata from the typed props below.
+   */
+  meta?: ReactNode;
+  /** Canonical metadata composition (used when `meta` is omitted). */
+  statusBadge?: { tone: BadgeTone; label: string };   // explicit, no inference
   priority?: { tone: BadgeTone; label: string };
-  labels?: Array<{ id: string; tone: BadgeTone; name: string }>;  // component caps at 2
+  labels?: Array<{ id: string; tone: BadgeTone; name: string }>;  // capped at 2
   assignee?: { name: string };      // renders Avatar + name
-  dueDate?: string | null;
+  dueDate?: string | null;          // compact variant hides this
   overdue?: boolean;                // page computes via lib/isOverdue — unchanged
-  caption?: ReactNode;              // cross-workspace / project caption (ONE slot)
   selectable?: { checked: boolean; onChange: () => void; label: string };
-  quickEdit?: ReactNode;            // hosts existing QuickEdit* components
-  variant?: "default" | "compact";
   selected?: boolean;
+  /** Keyboard/hover highlight used by the search overlay listbox. */
+  active?: boolean;
+  onHover?: () => void;            // search overlay keyboard navigation
+  onNavigate?: () => void;         // e.g. search dialog closes itself on select
+  variant?: "default" | "compact" | "workspace";
 }
 ```
+
+> **Note on the `meta` slot vs. the plan's original `quickEdit?: ReactNode`:**
+> The originally planned `quickEdit` prop was not adopted. The shipped
+> `LedgerRow` instead exposes a `meta?: ReactNode` slot that the **page**
+> populates with `QuickEdit*` components (via the `data-quickedit="meta"`
+> marker for styling). This keeps quick-edit *logic* and `quickEdit.ts` state on
+> the page and is what ships today. The `workspace` variant renders the
+> Dashboard's brand mark + role badge; the `compact` variant renders the
+> single-link search-overlay row and hides the due date.
 
 **Safety rules**:
 1. Pages keep all computation: `issueKey()`, `isOverdue()`, `labelTone()`, filter/sort,
@@ -516,7 +551,6 @@ WS5 needs WS1 (primitives) and is cleaner after WS2. WS6 needs WS1 controls and 
 | 3 | Quick edit regression | High | Low | QuickEdit* components mounted unmodified via slot; `quickEdit.ts` untouched | `quick-edit*` tests; manual commit/cancel pass |
 | 4 | Search regression (debounce/abort/keyboard) | High | Low | SearchDialog logic untouched; only row markup swaps | `search-dialog` tests incl. keyboard nav |
 | 5 | Saved Views regression | High | Med | Snapshot shape/version untouched; URL is a projection only | `saved-views-section` + `saved-view-filters` tests; apply→reload→apply pass |
-| 6 | URL filter regression (lost/stale state) | Med | Med | Pure `urlFilters` helpers, unit-tested; `replace: true` semantics; unknown params ignored | `url-filters` tests + integration round-trip |
 | 7 | Workspace switching data leakage | High | Low | Switcher uses the same `GET /workspaces` the Dashboard uses; no new endpoints or membership data | `workspace-switcher` tests; manual cross-account spot check |
 | 8 | Responsive regression | Med | Med | Breakpoints unchanged; media rules moved verbatim in WS1; disclosure is additive | WS7 manual pass at 5 widths + touch |
 | 9 | Accessibility regression | High | Med | Contracts immutable; axe after every WS; new a11y only additive | axe suite + keyboard-only pass |

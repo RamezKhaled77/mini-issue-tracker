@@ -617,7 +617,7 @@ export function WorkspacePage() {
                           tone="neutral"
                           triggerContent={
                             issue.assignee ? (
-                              <span className="card-assignee">
+                              <span className="ledger-assignee">
                                 <Avatar name={issue.assignee.name} decorative small />
                                 {issue.assignee.name}
                               </span>
@@ -637,7 +637,7 @@ export function WorkspacePage() {
                         />
                       )}
                       {members.length === 0 && issue.assignee && (
-                        <span className="card-assignee">
+                        <span className="ledger-assignee">
                           <Avatar name={issue.assignee.name} decorative small />
                           {issue.assignee.name}
                         </span>

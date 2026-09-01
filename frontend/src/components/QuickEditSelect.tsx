@@ -68,6 +68,7 @@ export function QuickEditSelect({
         type="button"
         className={`badge badge--${tone} qe-trigger${className ? ` ${className}` : ""}`}
         aria-label={accessibleName}
+        aria-expanded={open}
         data-quickedit={field}
         disabled={busy}
         aria-busy={busy || undefined}

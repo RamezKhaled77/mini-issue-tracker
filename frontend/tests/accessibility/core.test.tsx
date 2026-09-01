@@ -366,9 +366,9 @@ it("login page has no axe violations", async () => {
       </MemoryRouter>
     );
     await screen.findByText("Logout bug");
-    const cardAvatar = container.querySelector(".card-assignee .avatar");
+    const cardAvatar = container.querySelector(".ledger-assignee .avatar");
     expect(cardAvatar).toHaveAttribute("aria-hidden", "true");
-    expect(container.querySelector(".card-assignee")).toHaveTextContent("Sam Rivera");
+    expect(container.querySelector(".ledger-assignee")).toHaveTextContent("Sam Rivera");
     expect(await axe(container)).toHaveNoViolations();
   });
 

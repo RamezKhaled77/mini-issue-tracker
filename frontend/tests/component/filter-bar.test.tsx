@@ -135,6 +135,22 @@ describe("FilterBar", () => {
     expect(document.getElementById(controlsId!)).toBeInTheDocument();
   });
 
+  it("the disclosure toggle is keyboard-focusable and toggles on click", () => {
+    mockMatchMedia(true);
+    render(<FilterBar {...baseProps()} />);
+
+    const toggle = screen.getByRole("button", { name: "Filters" });
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveAttribute("aria-controls");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("does not show the Clear filters affordance when not filtering", () => {
     mockMatchMedia(false);
     render(<FilterBar {...baseProps()} isFiltering={false} />);
