@@ -190,7 +190,7 @@
    -------------------------------------------------------------------------- */
 .workspace-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 300px) 1fr;
   gap: var(--space-6);
   align-items: start;
 }

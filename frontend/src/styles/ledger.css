@@ -78,7 +78,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  min-width: 0;
+  min-width: 8rem;
 }
 
 .ledger-subtitle {
@@ -176,6 +176,9 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  min-width: 0;
 }
 
 /* Cross-workspace ledger context caption (My Issues) */
