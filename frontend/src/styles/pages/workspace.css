@@ -190,12 +190,17 @@
    -------------------------------------------------------------------------- */
 .workspace-layout {
   display: grid;
-  grid-template-columns: minmax(236px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
   gap: var(--space-6);
   align-items: start;
 }
 
-.projects-column,
+.projects-column {
+  min-width: 0;
+  padding-right: var(--space-5);
+  border-right: var(--border-subtle);
+}
+
 .issues-column {
   min-width: 0;
 }

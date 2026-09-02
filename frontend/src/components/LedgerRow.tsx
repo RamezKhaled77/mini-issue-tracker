@@ -158,12 +158,12 @@ export function LedgerRow({
         <span className="ledger-main">
           <span className="ledger-title">{title}</span>
           {caption && <span className="ledger-subtitle">{caption}</span>}
+          {(compact || workspace) && (
+            <span className="ledger-meta" data-quickedit={meta !== undefined ? "meta" : undefined}>
+              {workspace ? meta : metaContent}
+            </span>
+          )}
         </span>
-        {(compact || workspace) && (
-          <span className="ledger-meta" data-quickedit={meta !== undefined ? "meta" : undefined}>
-            {workspace ? meta : metaContent}
-          </span>
-        )}
         <span className="ledger-chevron" aria-hidden="true">
           &rarr;
         </span>
