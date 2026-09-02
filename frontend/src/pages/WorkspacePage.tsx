@@ -400,8 +400,8 @@ export function WorkspacePage() {
         )}
       </section>
 
-      <div className="workspace-layout">
-        <div className="projects-column">
+      <div className="grid grid-cols-[minmax(260px,300px)_1fr] lg:grid-cols-[1fr]">
+        <div className="projects-column min-w-0 border-r var(--border-subtle) pr-6">
           <h2 className="section-title">Projects</h2>
           <ProjectDialog
             workspaceId={workspaceId!}
@@ -424,7 +424,7 @@ export function WorkspacePage() {
           />
         </div>
 
-        <div className="issues-column">
+        <div className="issues-column min-w-0">
           <div className="section-header">
             <h2 className="section-title">Issues</h2>
             {selectedProject && !showForm && (

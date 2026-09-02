@@ -158,17 +158,17 @@ export function LedgerRow({
         <span className="ledger-main">
           <span className="ledger-title">{title}</span>
           {caption && <span className="ledger-subtitle">{caption}</span>}
+          {(compact || workspace) && (
+            <span className="ledger-meta" data-quickedit={meta !== undefined ? "meta" : undefined}>
+              {workspace ? meta : metaContent}
+            </span>
+          )}
         </span>
-        {(compact || workspace) && (
-          <span className="ledger-meta" data-quickedit={meta !== undefined ? "meta" : undefined}>
-            {workspace ? meta : metaContent}
-          </span>
-        )}
         <span className="ledger-chevron" aria-hidden="true">
           &rarr;
         </span>
       </Link>
-      {/* Page ledgers keep the meta run OUTSIDE the navigation link so
+      {/* Page ledgers keep the meta run outside the navigation link so
           quick-edit controls never trigger navigation (Spec 007/010 contract);
           overlay/workspace rows keep it inside the single link. */}
       {!compact && !workspace && (

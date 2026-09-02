@@ -133,11 +133,11 @@
   }
 }
 
-/* ============================================================
+/* =========================================================
    Global Search (Spec 008) — "the ledger, lifted".
    The overlay composes the existing .dialog; result rows are a
    compact variant of .ledger-row. Tokens only.
-   ============================================================ */
+   ========================================================= */
 
 /* The trigger is a <button> sharing .sidebar-link with anchors. */
 button.sidebar-link {
@@ -231,15 +231,99 @@ button.sidebar-link {
   color: var(--color-accent);
 }
 
+/* Search result metadata group — fixed order, flexible wrap.
+   Kept for reference; metadata is now nested inside .ledger-main in compact variant.
+   The semantic order is: Status → Priority → Labels → Assignee → Due Date. */
+.search-meta-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* At tablet widths and below, allow metadata to wrap without crushing the title.
+   In the compact variant, metadata is nested inside .ledger-main and wraps naturally. */
 @media (max-width: 700px) {
-  /* Anchor the search sheet toward the top on small screens. */
-  .dialog-overlay:has(.search-dialog) {
-    align-items: flex-start;
+  .ledger-title {
+    min-width: 8rem;
+    font-size: var(--text-strong);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+}
+
+/* Mobile: the dialog becomes a near-full-width sheet with controlled gutters. */
+@media (max-width: 480px) {
+  .dialog {
+    max-width: calc(100vw - var(--space-4) * 2);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    max-height: calc(100vh - var(--space-4) * 2);
+    padding: var(--space-4) var(--space-4) var(--space-5);
   }
 
-  .search-clear {
-    min-width: 44px;
-    min-height: 44px;
+  .search-dialog {
+    min-width: 0;
+  }
+
+  /* The input takes the full usable width inside the sheet. */
+  .search-dialog input {
+    width: 100%;
+  }
+
+  /* Result rows: key on first level, main content (title/caption + metadata) on second.
+     The .ledger-main now nests the metadata, so title gets available width and
+     metadata wraps naturally below the title/subtitle. */
+  .ledger-row--search {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding-block: var(--space-2);
+  }
+
+  /* First row: key + title + caption (primary).
+     .ticket-key has stable width; .ledger-main receives remaining width. */
+  .ledger-row--search .ticket-key {
+    flex-shrink: 0;
+    width: 3.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ledger-row--search .ledger-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .ledger-row--search .ledger-title {
+    font-size: var(--text-strong);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.3;
+    min-width: 8rem;
+  }
+
+  /* Metadata nested inside .ledger-main wraps naturally below the title.
+      No separate search-meta-group shift needed. */
+  .ledger-row--search .ledger-chevron {
+    display: none;
+  }
+}
+
+/* At the narrowest widths, preserve 44px touch targets and readable gutters. */
+@media (max-width: 375px) {
+  .dialog {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .ledger-row--search {
+    padding-inline: var(--space-2);
   }
 }
 
