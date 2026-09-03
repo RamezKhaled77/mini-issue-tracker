@@ -54,3 +54,379 @@
 .back-link:hover {
   color: var(--color-accent);
 }
+
+/* ============================================================================
+   Workspace Dashboard — `/workspaces/:id/dashboard`
+   Extends the existing token system; no new colors or radii introduced.
+   ========================================================================== */
+
+.workspace-dashboard {
+  /* The dashboard content area: full width inside the page layout wrapper. */
+}
+
+.dashboard-header {
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dashboard-header-main {
+  min-width: 0;
+}
+
+.dashboard-header-meta {
+  margin-top: var(--space-1);
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
+/* Health metric strip — editorial metrics, not cards. */
+.dashboard-health {
+  margin-bottom: var(--space-5);
+}
+
+.health-rule {
+  border-top: var(--border-subtle);
+  margin-bottom: var(--space-2);
+}
+
+.health-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.health-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 5rem;
+  flex: 1 1 5rem;
+}
+
+.metric-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-title);
+  font-weight: var(--font-weight-strong);
+  line-height: 1;
+}
+
+.metric-count--alert {
+  color: var(--color-coral);
+}
+
+.metric-label {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: var(--space-1) auto 0;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.open-dot {
+  background: var(--color-info);
+}
+
+.in-progress-dot {
+  background: var(--color-warning);
+}
+
+.closed-dot {
+  background: var(--color-success);
+}
+
+.overdue-dot {
+  background: var(--color-coral);
+}
+
+.metric-name {
+  margin-top: var(--space-1);
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+.health-rule-vertical {
+  align-self: stretch;
+  width: 1px;
+  background: var(--border-subtle);
+}
+
+/* Two-column layout for My Issues + Overdue */
+.dashboard-issue-columns {
+  display: grid;
+  grid-template-columns: 1fr 16rem;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-my-issues {
+  min-width: 0;
+}
+
+.dashboard-overdue {
+  min-width: 0;
+}
+
+/* Priority + Projects two-column */
+.dashboard-secondary-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+/* Section styling */
+.dashboard-section {
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.dashboard-view-all {
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.dashboard-view-all:hover {
+  color: var(--color-accent);
+}
+
+/* Priority distribution */
+.priority-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.priority-row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr 2rem;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.priority-label-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.priority-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-xs);
+}
+
+.urgent-dot {
+  background: var(--color-badge-urgent-text);
+}
+
+.high-dot {
+  background: var(--color-badge-high-text);
+}
+
+.medium-dot {
+  background: var(--color-badge-medium-text);
+}
+
+.low-dot {
+  background: var(--color-badge-low-text);
+}
+
+.priority-bar-track {
+  height: 0.5rem;
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.priority-bar-fill {
+  height: 100%;
+  min-width: 0.25rem;
+  background: var(--color-accent);
+  border-radius: var(--radius-xs);
+  transition: width var(--duration-normal) var(--ease-standard);
+}
+
+.priority-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-strong);
+  color: var(--color-text);
+  text-align: right;
+}
+
+/* Project list */
+.project-overview-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-subtle);
+}
+
+.project-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: var(--border-subtle);
+}
+
+.project-row:first-child {
+  border-top: none;
+}
+
+.project-name {
+  font-size: var(--text-strong);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.project-name:hover {
+  color: var(--color-accent);
+}
+
+.project-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-meta);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.project-issue-count {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.project-empty {
+  padding: var(--space-3) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-meta);
+}
+
+/* Activity list */
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-subtle);
+}
+
+.activity-empty {
+  padding: var(--space-3) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-meta);
+}
+
+/* Skeleton loading */
+.dashboard-skeleton {
+  gap: var(--space-3);
+}
+
+/* Error state */
+.dashboard-error {
+  max-width: var(--layout-max-width, 900px);
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+@media (max-width: 700px) {
+  .dashboard-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .dashboard-header-main {
+    flex: 1;
+  }
+
+  .health-metrics {
+    gap: var(--space-2);
+  }
+
+  .health-metric {
+    flex: 1 1 4rem;
+    min-width: 4rem;
+  }
+
+  .health-rule-vertical {
+    display: none;
+  }
+
+  .dashboard-issue-columns,
+  .dashboard-secondary-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .priority-row {
+    grid-template-columns: 6.5rem 1fr 2rem;
+  }
+
+  .back-link {
+    margin-bottom: var(--space-2);
+  }
+}
+
+@media (max-width: 390px) {
+  .health-metric {
+    font-size: var(--text-meta);
+  }
+
+  .metric-count {
+    font-size: var(--text-strong);
+  }
+
+  .metric-name {
+    font-size: var(--text-label);
+  }
+}
+

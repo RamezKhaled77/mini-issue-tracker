@@ -137,3 +137,33 @@ export function IconInvite(props: IconProps) {
     </Base>
   );
 }
+
+export function IconActivity(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path
+        d="M1 9l3-3 2 2 3-4 4 4 3-2 3 3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Base>
+  );
+}
+
+export function IconPriority(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path
+        d="M3 13l5-5 3 3 5-5v6H3z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Base>
+  );
+}

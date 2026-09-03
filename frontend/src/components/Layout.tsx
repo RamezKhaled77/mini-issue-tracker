@@ -13,6 +13,7 @@ import {
   IconBrand,
   IconSearch,
   IconIssue,
+  IconActivity,
   IconWorkspaces,
   IconHelp,
   IconSignout,
@@ -164,6 +165,17 @@ export function Layout() {
         {workspaceId && (
           <nav className="sidebar-nav sidebar-nav--contextual" aria-label="Workspace">
             <span className="sidebar-eyebrow">Workspace</span>
+            <NavLink
+              to={`/workspaces/${workspaceId}/dashboard`}
+              end
+              data-sidebar-tooltip="Dashboard"
+              className={({ isActive }) =>
+                isActive ? "sidebar-link sidebar-link--active" : "sidebar-link"
+              }
+            >
+              <IconActivity />
+              <span className="sidebar-text">Dashboard</span>
+            </NavLink>
             <NavLink
               to={`/workspaces/${workspaceId}`}
               end

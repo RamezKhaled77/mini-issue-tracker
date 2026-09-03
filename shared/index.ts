@@ -143,6 +143,43 @@ export interface DashboardStats {
   byStatus: Record<IssueStatus, number>;
   byPriority: Record<IssuePriority, number>;
   total: number;
+  overdue: number;
+}
+
+/**
+ * Full workspace dashboard payload returned by GET /workspaces/:id/overview.
+ * Aggregates issue health, priority/status distribution, project summaries,
+ * my-issues and overdue issues, and recent workspace activity in a single call.
+ */
+export interface WorkspaceDashboardProject {
+  id: string;
+  name: string;
+  issueCount: number;
+  lastActivity: string | null;
+}
+
+export interface WorkspaceDashboardIssue {
+  id: string;
+  projectId: string;
+  projectName: string;
+  title: string;
+  description: string | null;
+  status: IssueStatus;
+  priority: IssuePriority;
+  assigneeId: string | null;
+  assignee: Identity | null;
+  dueDate: string | null;
+  labelIds: string[];
+  labels: Label[];
+}
+
+export interface WorkspaceDashboardData {
+  workspace: { id: string; name: string; ownerId: string; isOwner: boolean };
+  stats: DashboardStats;
+  projects: WorkspaceDashboardProject[];
+  myIssues: WorkspaceDashboardIssue[];
+  overdueIssues: WorkspaceDashboardIssue[];
+  recentActivity: Activity[];
 }
 
 export interface Paginated<T> {

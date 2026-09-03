@@ -6,6 +6,7 @@ import type {
   SavedView,
   SearchResponse,
   UpdateSavedViewRequest,
+  WorkspaceDashboardData,
 } from "@mini-issue-tracker/shared";
 
 export class ApiError extends Error {
@@ -56,6 +57,9 @@ export const api = {
   patch: <T>(path: string, data: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(data) }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  /** Full workspace dashboard payload (stats, projects, my-issues, overdue, activity). */
+  getWorkspaceOverview: (workspaceId: string) =>
+    request<WorkspaceDashboardData>(`/workspaces/${workspaceId}/overview`),
   getActivity: (issueId: string, params?: { page?: number; pageSize?: number }) =>
     request<ActivityListResponse>(buildUrl(`/issues/${issueId}/activity`, params as Record<string, unknown> | undefined)),
   bulkUpdate: (body: BulkIssueRequest) =>

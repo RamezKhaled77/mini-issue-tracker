@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage.js";
 import { SignupPage } from "./pages/SignupPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { WorkspacePage } from "./pages/WorkspacePage.js";
+import { WorkspaceDashboardPage } from "./pages/WorkspaceDashboardPage.js";
 import { IssuePage } from "./pages/IssuePage.js";
 import { MyIssuesPage } from "./pages/MyIssuesPage.js";
 import { LabelsPage } from "./pages/LabelsPage.js";
@@ -37,6 +38,7 @@ export function App() {
           <Route index element={<DashboardPage />} />
           <Route path="my-issues" element={<MyIssuesPage />} />
           <Route path="workspaces/:workspaceId" element={<WorkspacePage />} />
+          <Route path="workspaces/:workspaceId/dashboard" element={<WorkspaceDashboardPage />} />
           <Route path="workspaces/:workspaceId/labels" element={<LabelsPage />} />
           <Route path="workspaces/:workspaceId/issues/:issueId" element={<IssuePage />} />
           <Route path="*" element={<NotFoundPage />} />
